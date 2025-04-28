@@ -1,0 +1,54 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.Python
+env/
+venv/
+.venv/
+dist/
+build/
+*.egg-info/
+*.whl
+*.tar.gz
+*.zip
+
+# IDE specific files
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Log and temp files
+*.log
+tmp/
+temp/
+
+# Local configuration
+config.local.py
+.env
+secrets/
+
+# Dependencies (если используешь virtualenv, это особенно важно)
+/node_modules/  
+vendor/
+
+# Tests related files
+*.cover
+coverage.html
+coverage.xml
+
+# Other
+*.bak
+*.orig
+
+
+ТЗ.md
+tutor.log
