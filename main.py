@@ -104,6 +104,8 @@ class MainWindow(QMainWindow):
         self.current_course_structure = []
         self.current_section = None
         self.progress = {}
+        self.current_stage = 0  # Этап обучения (0, 1 или 2)
+        self.previous_questions = []  # Список предыдущих вопросов для избежания повторений
         
         # Создаем центральный виджет и макет
         central_widget = QWidget()
@@ -180,21 +182,37 @@ class MainWindow(QMainWindow):
         self.answer_edit = QTextEdit()
         self.answer_edit.setPlaceholderText("Введите ваш ответ здесь...")
         
+        # Добавляем поле для комментария
+        self.comment_label = QLabel("Ваш комментарий к ответу (необязательно):")
+        self.comment_edit = QTextEdit()
+        self.comment_edit.setPlaceholderText("Здесь вы можете объяснить свой выбор или указать на неоднозначность вопроса...")
+        self.comment_edit.setMaximumHeight(80)  # Ограничиваем высоту поля
+        
         exercise_buttons_layout = QHBoxLayout()
         self.check_btn = QPushButton("Проверить ответ")
         self.next_exercise_btn = QPushButton("Новое упражнение")
+        self.next_stage_btn = QPushButton("Следующий этап")
         
         exercise_buttons_layout.addWidget(self.check_btn)
         exercise_buttons_layout.addWidget(self.next_exercise_btn)
+        exercise_buttons_layout.addWidget(self.next_stage_btn)
         
         self.result_label = QLabel("Результат проверки")
         self.result_edit = QTextEdit()
         self.result_edit.setReadOnly(True)
         
+        # Добавляем индикатор прогресса с этапом обучения
+        self.stage_label = QLabel("Этап обучения: тесты с одним правильным ответом (1/3)")
+        self.stage_label.setFont(QFont("Arial", 10, QFont.Bold))
+        self.stage_label.setAlignment(Qt.AlignCenter)
+        
+        exercise_layout.addWidget(self.stage_label)
         exercise_layout.addWidget(self.exercise_label)
         exercise_layout.addWidget(self.exercise_edit)
         exercise_layout.addWidget(QLabel("Ваш ответ:"))
         exercise_layout.addWidget(self.answer_edit)
+        exercise_layout.addWidget(self.comment_label)
+        exercise_layout.addWidget(self.comment_edit)
         exercise_layout.addLayout(exercise_buttons_layout)
         exercise_layout.addWidget(self.result_label)
         exercise_layout.addWidget(self.result_edit)
@@ -258,6 +276,7 @@ class MainWindow(QMainWindow):
         
         self.check_btn.clicked.connect(self.check_answer)
         self.next_exercise_btn.clicked.connect(self.generate_exercise)
+        self.next_stage_btn.clicked.connect(self.next_stage)
     
     def load_demo_text(self):
         """Загружает приветственный текст и справку."""
@@ -356,23 +375,53 @@ class MainWindow(QMainWindow):
             self.exercise_edit.setText("Генерация упражнения...")
             QApplication.processEvents()  # Обновляем интерфейс
             
-            # Генерируем упражнения и фильтруем уже выполненные
+            # Получаем заголовок раздела, если есть
+            section_title = self.current_section['title'] if self.current_section else ""
+            
+            # Обновляем текст этапа обучения
+            self.update_stage_text()
+            
+            # Генерируем упражнения конкретного этапа
             new_exs = generate_exercises(
                 self.current_text,
-                self.settings.get("difficulty", "средний")
+                self.settings.get("difficulty", "средний"),
+                section_title,
+                self.current_stage,
+                self.previous_questions
             )
+            
             if not new_exs:
                 raise ValueError("Не удалось сгенерировать упражнения")
+                
+            # Фильтруем уже выполненные упражнения, если курс открыт
             if self.current_course_dir and self.current_section:
                 sid = str(self.current_section['id'])
                 answered = self.progress['sections'][sid]['answered']
                 new_exs = [ex for ex in new_exs if ex['question'] not in answered]
+                
                 if not new_exs:
-                    QMessageBox.information(self, "Информация", "Все упражнения для этого раздела выполнены")
-                    self.exercise_edit.clear()
-                    return
+                    # Если все упражнения данного этапа выполнены, переходим к следующему
+                    if self.current_stage < 2:
+                        self.current_stage += 1
+                        self.update_stage_text()
+                        QMessageBox.information(self, "Информация", 
+                                               f"Все упражнения этапа {self.current_stage} выполнены. Переходим к следующему этапу.")
+                        # Рекурсивно вызываем генерацию упражнений для следующего этапа
+                        self.generate_exercise()
+                        return
+                    else:
+                        QMessageBox.information(self, "Информация", "Вы выполнили все упражнения для этого раздела!")
+                        self.exercise_edit.clear()
+                        return
+            
+            # Сохраняем сгенерированные упражнения и добавляем вопросы в список предыдущих
             self.current_exercises = new_exs
             exercise = new_exs[0]
+            self.previous_questions.append(exercise['question'])
+            
+            # Ограничиваем список предыдущих вопросов (не более 20)
+            if len(self.previous_questions) > 20:
+                self.previous_questions = self.previous_questions[-20:]
             
             # Форматируем упражнение для отображения
             exercise_text = f"{exercise['question']}\n\n"
@@ -384,11 +433,35 @@ class MainWindow(QMainWindow):
             
             self.exercise_edit.setText(exercise_text)
             self.answer_edit.clear()
+            self.comment_edit.clear()
             self.result_edit.clear()
+            
+            # Показываем/скрываем поле для комментария в зависимости от этапа
+            self.comment_label.setVisible(self.current_stage > 0)
+            self.comment_edit.setVisible(self.current_stage > 0)
             
         except Exception as e:
             log_error(e)
             self.exercise_edit.setText(f"Ошибка при генерации упражнения: {str(e)}")
+    
+    def update_stage_text(self):
+        """Обновляет текст с информацией о текущем этапе обучения."""
+        stage_names = [
+            "тесты с одним правильным ответом",
+            "тесты с несколькими правильными ответами",
+            "открытые вопросы"
+        ]
+        stage_name = stage_names[self.current_stage]
+        self.stage_label.setText(f"Этап обучения: {stage_name} ({self.current_stage + 1}/3)")
+    
+    def next_stage(self):
+        """Переход к следующему этапу обучения."""
+        if self.current_stage < 2:
+            self.current_stage += 1
+            self.update_stage_text()
+            self.generate_exercise()
+        else:
+            QMessageBox.information(self, "Информация", "Это последний этап обучения.")
     
     def check_answer(self):
         """Проверяет ответ пользователя."""
@@ -407,7 +480,10 @@ class MainWindow(QMainWindow):
             QApplication.processEvents()  # Обновляем интерфейс
             
             exercise = self.current_exercises[0]  # Берем первое упражнение
-            result = check_answer(exercise, user_answer)
+            user_comment = self.comment_edit.toPlainText().strip()
+            
+            # Проверяем ответ с учетом комментария пользователя
+            result = check_answer(exercise, user_answer, user_comment)
             
             # Обновляем историю в progress при правильном ответе
             if self.current_course_dir and result.get("is_correct", False):
@@ -419,17 +495,38 @@ class MainWindow(QMainWindow):
                     sp['exercises_completed'] += 1
                     save_progress(os.path.join(self.current_course_dir, "progress.json"), self.progress)
             
-            # Форматируем результат
-            result_text = ""
-            if result.get("is_correct", False):
-                result_text += "✓ Правильно!\n\n"
+            # Форматируем результат в зависимости от этапа
+            if self.current_stage == 2:  # Открытые вопросы с подробным отзывом
+                result_text = ""
+                if result.get("is_correct", False):
+                    result_text += "✓ Молодец! Ваш ответ соответствует требованиям.\n\n"
+                else:
+                    result_text += "Ваш ответ нуждается в доработке.\n\n"
+                
+                result_text += f"Отзыв преподавателя:\n{result.get('feedback', '')}\n\n"
+                
+                if "strengths" in result:
+                    result_text += "Сильные стороны вашего ответа:\n"
+                    for i, strength in enumerate(result["strengths"], 1):
+                        result_text += f"{i}. {strength}\n"
+                    result_text += "\n"
+                
+                if "areas_for_improvement" in result:
+                    result_text += "Области для улучшения:\n"
+                    for i, area in enumerate(result["areas_for_improvement"], 1):
+                        result_text += f"{i}. {area}\n"
             else:
-                result_text += "✗ Неправильно.\n\n"
-            
-            result_text += f"Отзыв: {result.get('feedback', '')}\n\n"
-            
-            if not result.get("is_correct", False):
-                result_text += f"Правильный ответ: {result.get('correct_answer', '')}"
+                # Стандартный формат для тестов (этапы 0 и 1)
+                result_text = ""
+                if result.get("is_correct", False):
+                    result_text += "✓ Правильно!\n\n"
+                else:
+                    result_text += "✗ Неправильно.\n\n"
+                
+                result_text += f"Отзыв: {result.get('feedback', '')}\n\n"
+                
+                if not result.get("is_correct", False):
+                    result_text += f"Правильный ответ: {result.get('correct_answer', '')}"
             
             self.result_edit.setText(result_text)
             
