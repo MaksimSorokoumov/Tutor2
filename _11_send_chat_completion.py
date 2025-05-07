@@ -2,6 +2,7 @@
 import requests
 import json
 from typing import List, Dict, Any, Optional
+import re # Добавляем импорт re
 
 def send_chat_completion(
     api_endpoint: str,
@@ -73,6 +74,7 @@ def get_completion_text(response: Dict[str, Any]) -> Optional[str]:
         Текст ответа или None, если структура ответа некорректна
     """
     try:
+        text_content: Optional[str] = None
         # Проверяем ключи в соответствии с форматом OpenAI API
         if 'choices' in response and len(response['choices']) > 0:
             choice = response['choices'][0]
@@ -80,10 +82,15 @@ def get_completion_text(response: Dict[str, Any]) -> Optional[str]:
             # Формат может различаться в зависимости от API
             if 'message' in choice and 'content' in choice['message']:
                 # Стандартный формат OpenAI
-                return choice['message']['content']
+                text_content = choice['message']['content']
             elif 'text' in choice:
                 # Альтернативный формат
-                return choice['text']
+                text_content = choice['text']
+        
+        if text_content:
+            # Удаляем теги <think>...</think> и их содержимое
+            text_content = re.sub(r'<think>.*?</think>', '', text_content, flags=re.DOTALL).strip()
+            return text_content
         
         print(f"Неизвестный формат ответа API: {response}")
         return None
