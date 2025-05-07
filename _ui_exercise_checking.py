@@ -204,6 +204,34 @@ def check_answer(window):
         
         window.result_edit.setHtml(result_text)
         
+        # После проверки ответа на третьем этапе меняем кнопку на "Следующий раздел" 
+        # и делаем ее зеленой
+        if window.current_stage == 2:
+            window.next_stage_btn.setText("Следующий раздел")
+            window.next_stage_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #4CAF50;
+                    color: white;
+                    border: none;
+                    padding: 5px 10px;
+                    font-size: 10pt;
+                    border-radius: 3px;
+                    min-width: 100px;
+                }
+                QPushButton:hover {
+                    background-color: #45a049;
+                }
+            """)
+            
+            # Отключаем обработчик events для текущей кнопки и подключаем новый
+            try:
+                window.next_stage_btn.clicked.disconnect()
+            except:
+                pass
+            
+            # Подключаем новый обработчик для открытия следующего раздела
+            window.next_stage_btn.clicked.connect(window.open_next_section)
+        
     except Exception as e:
         log_error(e)
         if hasattr(window, 'result_edit') and window.result_edit.isVisible():

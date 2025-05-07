@@ -15,7 +15,7 @@ from _14_check_answer import check_answer
 from _15_log_error import log_error, log_info
 from _16_create_course_structure import create_course_structure
 from _17_open_course import open_course
-from _18_select_section import select_section
+from _18_select_section import select_section, get_course_sections
 from _19_load_demo_text import load_welcome_text
 from _8_load_progress import load_progress
 from _9_save_progress import save_progress
@@ -252,6 +252,47 @@ class MainWindow(QMainWindow):
     def check_answer(self):
         """Проверяет ответ пользователя."""
         check_answer(self)
+    
+    def open_next_section(self):
+        """Открывает следующий раздел учебника."""
+        # Проверяем, открыт ли курс и есть ли текущий раздел
+        if not self.current_course_dir or not self.current_section:
+            QMessageBox.warning(self, "Предупреждение", "Необходимо открыть курс для доступа к разделам.")
+            return
+        
+        # Получаем все секции текущего курса
+        sections = get_course_sections(self.current_course_dir)
+        
+        # Находим индекс текущей секции
+        current_id = self.current_section['id']
+        current_index = -1
+        
+        for i, section in enumerate(sections):
+            if section['id'] == current_id:
+                current_index = i
+                break
+        
+        # Проверяем, есть ли следующая секция
+        if current_index >= 0 and current_index < len(sections) - 1:
+            # Получаем следующую секцию
+            next_section = sections[current_index + 1]
+            
+            # Отображаем следующую секцию
+            self.display_section(next_section)
+            
+            # Сбрасываем состояние кнопки "Следующий этап"
+            self.next_stage_btn.setText("Следующий этап")
+            try:
+                self.next_stage_btn.clicked.disconnect()
+            except:
+                pass
+            self.next_stage_btn.clicked.connect(self.next_stage)
+            
+            # Сбрасываем current_stage на первый этап для нового раздела
+            self.current_stage = 0
+            self.update_stage_text()
+        else:
+            QMessageBox.information(self, "Информация", "Это последний раздел учебника. Обучение завершено!")
     
     def copy_text(self):
         """Копирует текст в буфер обмена."""

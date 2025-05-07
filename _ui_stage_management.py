@@ -53,4 +53,33 @@ def next_stage(window):
         from _ui_exercise_generation import generate_exercise
         generate_exercise(window)
     else:
-        QMessageBox.information(window, "Информация", "Это последний этап обучения.") 
+        # Меняем текст кнопки на "Следующий раздел" и делаем её зеленой
+        window.next_stage_btn.setText("Следующий раздел")
+        window.next_stage_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                padding: 5px 10px;
+                font-size: 10pt;
+                border-radius: 3px;
+                min-width: 100px;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+        """)
+        
+        # Отключаем обработчик events для текущей кнопки и подключаем новый
+        try:
+            window.next_stage_btn.clicked.disconnect()
+        except:
+            pass
+        
+        # Подключаем новый обработчик для открытия следующего раздела
+        window.next_stage_btn.clicked.connect(window.open_next_section)
+
+def open_next_section(window):
+    """Открывает следующий раздел учебника."""
+    # Перенаправляем вызов к методу объекта window
+    window.open_next_section() 
