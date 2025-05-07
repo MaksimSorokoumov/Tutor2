@@ -1,8 +1,9 @@
 """Модуль для UI-функций проверки ответов."""
 
 import os
-from PyQt5.QtWidgets import QMessageBox, QCheckBox, QLabel, QApplication
+from PyQt5.QtWidgets import QMessageBox, QCheckBox, QLabel, QApplication, QDialog, QVBoxLayout, QTextEdit, QPushButton, QScrollArea
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont
 
 from _14_check_answer import check_answer as check_answer_llm
 from _9_save_progress import save_progress
@@ -88,6 +89,55 @@ def check_single_exercise(window, exercise_index):
                     correct_answer = ", ".join(correct_indexes)
                 
             result_html = f'<span style="color: red; font-weight: bold;">✗ Неправильно.</span><br>Правильный ответ: {correct_answer}'
+
+            # Добавляем кнопку "Подробнее" для тестов с множественным выбором, если есть подробное объяснение
+            if window.current_stage == 1 and 'feedback' in result and len(result['feedback']) > 30:
+                # Создаем подробное объяснение для отображения
+                detailed_feedback = result.get('feedback', '')
+                
+                # Проверяем, есть ли в контейнере упражнения виджет для подробного объяснения
+                if not 'explanation_widget' in exercise['ui']:
+                    # Если виджета нет, создаем и добавляем его в контейнер упражнения
+                    explanation_label = QLabel()
+                    explanation_label.setWordWrap(True)
+                    explanation_label.setTextFormat(Qt.RichText)
+                    explanation_label.setStyleSheet("QLabel { margin-top: 10px; background-color: #f0f0f0; border-radius: 5px; padding: 10px; }")
+                    explanation_label.setVisible(False)  # Изначально скрыт
+                    
+                    # Создаем кнопку для отображения/скрытия объяснения
+                    detail_btn = QPushButton("Подробнее")
+                    detail_btn.setStyleSheet("""
+                        QPushButton {
+                            background-color: #2196F3;
+                            color: white;
+                            border: none;
+                            padding: 5px 10px;
+                            font-size: 10pt;
+                            border-radius: 3px;
+                            max-width: 120px;
+                        }
+                        QPushButton:hover {
+                            background-color: #1976D2;
+                        }
+                    """)
+                    
+                    # Добавляем кнопку и виджет объяснения в контейнер упражнения
+                    layout = exercise['ui']['frame'].layout()
+                    layout.addWidget(detail_btn)
+                    layout.addWidget(explanation_label)
+                    
+                    # Сохраняем ссылки на виджеты в UI упражнения
+                    exercise['ui']['explanation_widget'] = explanation_label
+                    exercise['ui']['detail_button'] = detail_btn
+                    
+                    # Подключаем обработчик нажатия кнопки
+                    detail_btn.clicked.connect(lambda checked, label=explanation_label, btn=detail_btn: toggle_explanation(label, btn))
+                
+                # Устанавливаем текст объяснения, заменяя переносы строк на HTML тег <br>
+                # Избегаем прямого использования обратного слеша в f-строке
+                explanation_text = detailed_feedback.replace("\n", "<br>")
+                formatted_explanation = f"<div style='margin-top: 10px;'><b>Объяснение:</b><br>{explanation_text}</div>"
+                exercise['ui']['explanation_widget'].setText(formatted_explanation)
         
         # Отображаем результат
         result_label = exercise['ui']['result_label']
@@ -131,6 +181,21 @@ def check_single_exercise(window, exercise_index):
     except Exception as e:
         log_error(e)
         QMessageBox.critical(window, "Ошибка", f"Ошибка при проверке ответа: {str(e)}")
+
+def toggle_explanation(label, button):
+    """Переключает отображение подробного объяснения.
+    
+    Args:
+        label: QLabel с объяснением
+        button: QPushButton кнопка переключения
+    """
+    is_visible = label.isVisible()
+    label.setVisible(not is_visible)
+    
+    if not is_visible:
+        button.setText("Скрыть объяснение")
+    else:
+        button.setText("Подробнее")
 
 def check_answer(window):
     """Проверяет ответ пользователя в главном окне (для открытых вопросов).

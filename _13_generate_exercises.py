@@ -209,4 +209,94 @@ def check_single_choice_answer(exercise: Dict[str, Any], user_answer: str) -> Di
         "is_correct": is_correct,
         "feedback": feedback,
         "correct_answer": correct_answer
+    }
+
+def check_multiple_choice_answer(exercise: Dict[str, Any], user_answer: str) -> Dict[str, Any]:
+    """Проверяет ответ на тест с несколькими правильными ответами без использования LLM.
+    
+    Args:
+        exercise: Словарь с данными упражнения
+        user_answer: Ответ пользователя (строка с номерами вариантов через запятую)
+        
+    Returns:
+        Словарь с результатами проверки:
+        - is_correct: boolean - правильный ли ответ
+        - feedback: str - отзыв/объяснение
+        - correct_answer: правильный ответ или ответы (для сравнения)
+    """
+    correct_answer = exercise["correct_answer"]
+    options = exercise.get("options", [])
+    
+    # Преобразуем правильный ответ в список индексов опций
+    correct_indices = []
+    
+    # Если правильный ответ представлен в виде списка строк
+    if isinstance(correct_answer, list):
+        for answer in correct_answer:
+            for i, option in enumerate(options):
+                if option.lower() == answer.lower():
+                    correct_indices.append(i + 1)  # Индексы с 1
+                    break
+    # Если правильный ответ представлен в виде строки с перечислением
+    else:
+        for answer in correct_answer.split(','):
+            answer = answer.strip()
+            for i, option in enumerate(options):
+                if option.lower() == answer.lower():
+                    correct_indices.append(i + 1)  # Индексы с 1
+                    break
+    
+    # Получаем ответ пользователя как список индексов
+    try:
+        user_indices = [int(idx.strip()) for idx in user_answer.split(',')]
+    except ValueError:
+        return {
+            "is_correct": False,
+            "feedback": "Некорректный формат ответа. Укажите номера вариантов через запятую.",
+            "correct_answer": correct_answer
+        }
+    
+    # Проверяем, что все выбранные индексы существуют
+    if any(idx <= 0 or idx > len(options) for idx in user_indices):
+        return {
+            "is_correct": False,
+            "feedback": f"Некоторые варианты ответа не существуют. Допустимые значения от 1 до {len(options)}.",
+            "correct_answer": correct_answer
+        }
+    
+    # Сортируем индексы для корректного сравнения
+    correct_indices.sort()
+    user_indices.sort()
+    
+    # Основная проверка совпадения ответов
+    is_correct = correct_indices == user_indices
+    
+    # Формируем отзыв
+    if is_correct:
+        feedback = "Правильный ответ. Вы выбрали все верные варианты."
+    else:
+        # Подготовка строки с правильными вариантами для отзыва
+        correct_options_text = []
+        for idx in correct_indices:
+            correct_options_text.append(f"{idx}. {options[idx-1]}")
+        
+        # Формируем подробный отзыв
+        feedback = "Неправильный ответ. "
+        
+        # Поиск несовпадений
+        missing = [idx for idx in correct_indices if idx not in user_indices]
+        extra = [idx for idx in user_indices if idx not in correct_indices]
+        
+        if missing:
+            feedback += f"Вы не выбрали следующие правильные варианты: {', '.join(map(str, missing))}. "
+        
+        if extra:
+            feedback += f"Вы выбрали следующие неправильные варианты: {', '.join(map(str, extra))}. "
+        
+        feedback += f"Правильными вариантами являются: {', '.join(map(str, correct_indices))}."
+    
+    return {
+        "is_correct": is_correct,
+        "feedback": feedback,
+        "correct_answer": correct_answer
     } 
