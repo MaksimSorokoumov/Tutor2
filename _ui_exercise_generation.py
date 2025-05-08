@@ -14,7 +14,7 @@ from _14_check_answer import check_answer as check_answer_llm
 from _9_save_progress import save_progress
 from _15_log_error import log_error
 # Импортируем компоненты из новых модулей
-from _ui_exercise_generation_components import ZoomableScrollArea
+from _ui_exercise_generation_components import ZoomableScrollArea, OptionWidget
 from _ui_exercise_checking import check_single_exercise, check_answer
 # Импортируем функции из новых модулей
 from _ui_stage_management import update_stage_text, next_stage
@@ -268,25 +268,15 @@ def generate_exercise(window):
                 options_widgets = []  # Список для хранения виджетов с вариантами ответов
                 
                 for j, option in enumerate(exercise['options']):
-                    if window.current_stage == 0:  # Одиночный выбор
-                        option_button = QRadioButton(option)
-                        button_group.addButton(option_button, j)
-                    else:  # Множественный выбор
-                        option_button = QCheckBox(option)
-                    
-                    # Стиль для кнопок выбора
-                    option_button.setStyleSheet("""
-                        QRadioButton, QCheckBox {
-                            font-size: 10pt;
-                            padding: 3px;
-                            margin-right: 10px;
-                        }
-                        QRadioButton:hover, QCheckBox:hover {
-                            background-color: #f0f0f0;
-                        }
-                    """)
-                    options_layout.addWidget(option_button)
-                    options_widgets.append(option_button)  # Добавляем в наш список
+                    # Используем кастомный виджет с переносом текста
+                    is_radio = (window.current_stage == 0)
+                    opt_widget = OptionWidget(is_radio, option)
+                    button = opt_widget.button
+                    if is_radio:
+                        button_group.addButton(button, j)
+                    # Размер виджета управляется компоновкой
+                    options_layout.addWidget(opt_widget)
+                    options_widgets.append(button)
                 
                 exercise_layout.addLayout(options_layout)
                 

@@ -1,6 +1,6 @@
 """Модуль с компонентами UI для генерации и проверки упражнений."""
 
-from PyQt5.QtWidgets import QScrollArea, QLabel, QRadioButton, QCheckBox, QPushButton, QFrame, QSizePolicy, QWidget
+from PyQt5.QtWidgets import QScrollArea, QLabel, QRadioButton, QCheckBox, QPushButton, QFrame, QSizePolicy, QWidget, QHBoxLayout
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt
 
@@ -112,12 +112,7 @@ class ZoomableScrollArea(QScrollArea):
                         font-size: {int(10 * self.zoom_factor)}pt;
                         padding: 3px;
                         margin-right: 10px;
-                    }}
-                """)
-            elif isinstance(child, QPushButton):
-                child.setStyleSheet(f"""
-                    QPushButton {{
-                        font-size: {int(10 * self.zoom_factor)}pt;
+                        margin-left: 5px;
                     }}
                 """)
             
@@ -153,4 +148,31 @@ class ZoomableScrollArea(QScrollArea):
             QFrame {{
                 font-size: {int(10 * self.zoom_factor)}pt;
             }}
-        """) 
+        """)
+
+class OptionWidget(QWidget):
+    """Виджет варианта ответа с переносом текста."""
+    def __init__(self, is_radio, text, parent=None):
+        super().__init__(parent)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        if is_radio:
+            self.button = QRadioButton()
+        else:
+            self.button = QCheckBox()
+        self.label = QLabel(text)
+        self.label.setWordWrap(True)
+        self.label.setTextFormat(Qt.RichText)
+        self.label.setStyleSheet("QLabel { font-size: 10pt; padding: 3px; }")
+        layout.addWidget(self.button)
+        layout.addWidget(self.label, 1)
+        # Переключение по клику на метке
+        self.label.mousePressEvent = self._on_label_click
+
+        # Настраиваем расширяемость виджета и метки
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+
+    def _on_label_click(self, event):
+        self.button.toggle()
+        QWidget.mousePressEvent(self.label, event) 

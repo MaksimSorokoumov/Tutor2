@@ -160,23 +160,29 @@ def check_single_exercise(window, exercise_index):
         
         # Делаем варианты ответов неактивными и подсвечиваем правильные
         if window.current_stage == 0:  # Одиночный выбор
-            for i, widget in enumerate(exercise['ui']['options_widgets']):
-                widget.setEnabled(False)
-                # Подсветка правильного ответа зеленым
-                if exercise['options'][i].lower() == exercise['correct_answer'].lower():
-                    widget.setStyleSheet("QRadioButton { color: green; font-weight: bold; }")
+            for i, button_element in enumerate(exercise['ui']['options_widgets']): # button_element это QRadioButton/QCheckBox
+                button_element.setEnabled(False)
+                option_widget = button_element.parentWidget() # Получаем родительский OptionWidget
+                if option_widget and hasattr(option_widget, 'label'):
+                    label_to_style = option_widget.label
+                    # Сравниваем текст метки с правильным ответом
+                    if label_to_style.text().lower() == exercise['correct_answer'].lower():
+                        label_to_style.setStyleSheet("QLabel { font-size: 10pt; padding: 3px; color: green; }") # Без font-weight: bold
         elif window.current_stage == 1:  # Множественный выбор
-            for i, widget in enumerate(exercise['ui']['options_widgets']):
-                widget.setEnabled(False)
-                # Если ответ - список правильных ответов
-                if isinstance(exercise['correct_answer'], list):
-                    if exercise['options'][i] in exercise['correct_answer']:
-                        widget.setStyleSheet("QCheckBox { color: green; font-weight: bold; }")
-                # Если ответ - строка с перечислением правильных ответов
-                else:
-                    correct_options = [opt.strip() for opt in exercise['correct_answer'].split(',')]
-                    if exercise['options'][i] in correct_options:
-                        widget.setStyleSheet("QCheckBox { color: green; font-weight: bold; }")
+            for i, button_element in enumerate(exercise['ui']['options_widgets']): # button_element это QRadioButton/QCheckBox
+                button_element.setEnabled(False)
+                option_widget = button_element.parentWidget() # Получаем родительский OptionWidget
+                if option_widget and hasattr(option_widget, 'label'):
+                    label_to_style = option_widget.label
+                    current_option_text = label_to_style.text().lower()
+                    correct_answers_list = []
+                    if isinstance(exercise['correct_answer'], list):
+                        correct_answers_list = [ans.lower() for ans in exercise['correct_answer']]
+                    else: # Строка с ответами через запятую
+                        correct_answers_list = [ans.strip().lower() for ans in exercise['correct_answer'].split(',')]
+                    
+                    if current_option_text in correct_answers_list:
+                        label_to_style.setStyleSheet("QLabel { font-size: 10pt; padding: 3px; color: green; }") # Без font-weight: bold
         
     except Exception as e:
         log_error(e)
