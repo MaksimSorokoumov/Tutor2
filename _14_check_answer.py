@@ -4,10 +4,12 @@ import json
 
 from _4_load_settings import load_settings
 from _11_send_chat_completion import send_chat_completion, get_completion_text
+from _13_generate_exercises import check_single_choice_answer, check_multiple_choice_answer
 
 def check_answer(
     exercise: Dict[str, Any],
     user_answer: str,
+    user_comment: str = "",
     settings_path: str = "settings.json"
 ) -> Dict[str, Any]:
     """Проверяет правильность ответа пользователя.
@@ -15,6 +17,7 @@ def check_answer(
     Args:
         exercise: Словарь с данными упражнения
         user_answer: Ответ пользователя
+        user_comment: Комментарий пользователя к ответу (для этапов 1 и 2)
         settings_path: Путь к файлу настроек
         
     Returns:
@@ -27,28 +30,102 @@ def check_answer(
         ValueError: При ошибке проверки ответа
         FileNotFoundError: Если файл настроек не найден
     """
+    # Определяем этап упражнения
+    stage = exercise.get("stage", 0)
+    
+    # Для тестов с единственным правильным ответом (этап 0) используем локальную проверку
+    if stage == 0 and exercise.get("type") in ["тесты с единственным правильным ответом", 
+                                             "тест с единственным правильным ответом"]:
+        return check_single_choice_answer(exercise, user_answer)
+    
+    # Для тестов с множественным выбором (этап 1) также используем локальную проверку
+    if stage == 1 and exercise.get("type") in ["тесты с несколькими правильными ответами",
+                                             "тест с несколькими правильными ответами"]:
+        result = check_multiple_choice_answer(exercise, user_answer)
+        
+        # Если ответ неправильный и есть возможность использовать нейросеть
+        # добавляем подробное объяснение от нейросети
+        if not result["is_correct"]:
+            try:
+                explanation = get_llm_explanation_for_wrong_answer(exercise, user_answer, user_comment, settings_path)
+                if explanation:
+                    # Добавляем объяснение от нейросети к базовому отзыву
+                    result["feedback"] += "\n\n" + explanation
+            except Exception as e:
+                print(f"Ошибка при получении объяснения от нейросети: {e}")
+                # В случае ошибки оставляем базовый отзыв
+        
+        return result
+    
+    # Для открытых вопросов (этап 2) используем проверку через нейросеть
     # Загружаем настройки
     settings = load_settings(settings_path)
     
-    # Проверка ответа через нейросеть для всех типов упражнений
-    system_message = {
-        "role": "system",
-        "content": f"""Ты - опытный преподаватель, проверяющий ответы студентов на упражнения следующих типов:
-- тест с единственным правильным ответом
-- тест с несколькими правильными ответами
-- открытый вопрос
-- заполнение пропущенных слов в предложении
+    # Формируем системное сообщение в зависимости от этапа
+    if stage == 1:  # Тесты с несколькими правильными ответами (используется только для объяснения ошибок)
+        system_message = {
+            "role": "system",
+            "content": """Ты - опытный преподаватель, проверяющий ответы студентов на тесты с несколькими правильными ответами.
 
-Вопрос и правильный ответ переданы. Оцени, является ли ответ студента правильным, учитывая возможные варианты формулировок и несколько правильных ответов.
-Дай подробный отзыв по ошибкам или подтверждение правильности.
+Оцени, правильно ли студент выбрал все верные варианты. Учитывай следующие моменты:
+1. Правильный ответ должен содержать ВСЕ верные варианты и НЕ содержать неверные
+2. Если студент выбрал только часть правильных вариантов - ответ неполный и считается неверным
+3. Если студент выбрал все правильные варианты, но добавил хотя бы один неверный - ответ неверный
+4. Учитывай комментарий студента при оценке ответа - возможно, он объясняет свой выбор или указывает на неоднозначность вопроса
+
 Формат ответа строго в виде JSON:
 ```json
-{{"is_correct": true/false, "feedback": "подробное объяснение"}}
+{"is_correct": true/false, "feedback": "подробное объяснение с указанием правильных вариантов и ошибок студента"}
 ```"""
-    }
+        }
+    else:  # Открытые вопросы (этап 2)
+        system_message = {
+            "role": "system",
+            "content": """Ты - опытный преподаватель, проверяющий ответы студентов на открытые вопросы.
+
+Оцени ответ студента по следующим критериям:
+1. Полнота ответа - покрывает ли все аспекты вопроса
+2. Точность - соответствует ли фактам из учебного материала
+3. Глубина понимания - демонстрирует ли студент понимание темы
+4. Структура и логика - насколько логично выстроен ответ
+5. Применение знаний - может ли студент применить знания в контексте
+
+Предоставь подробную, но доброжелательную обратную связь. Объясни, что было сделано хорошо,
+а что можно улучшить. Помоги студенту лучше понять тему.
+
+Формат ответа строго в виде JSON:
+```json
+{
+  "is_correct": true/false,
+  "feedback": "подробная обратная связь",
+  "strengths": ["сильные стороны ответа"],
+  "areas_for_improvement": ["области для улучшения"]
+}
+```"""
+        }
+    
+    # Формируем сообщение с упражнением и ответом пользователя
+    content = f"Тип упражнения: {exercise.get('type')}\nВопрос: {exercise.get('question')}\n\n"
+    
+    # Добавляем варианты ответов, если они есть
+    if 'options' in exercise and exercise['options']:
+        content += "Варианты ответов:\n"
+        for i, option in enumerate(exercise['options'], 1):
+            content += f"{i}. {option}\n"
+        content += "\n"
+    
+    content += f"Правильный ответ: {exercise.get('correct_answer')}\n\n"
+    content += f"Ответ студента: {user_answer}\n"
+    
+    # Добавляем комментарий пользователя, если он есть
+    if user_comment:
+        content += f"\nКомментарий студента: {user_comment}\n"
+    
+    content += "\nОцени, правильно ли ответил студент."
+    
     user_message = {
         "role": "user",
-        "content": f"Тип упражнения: {exercise.get('type')}\nВопрос: {exercise.get('question')}\n\nПравильный ответ: {exercise.get('correct_answer')}\n\nОтвет студента: {user_answer}\nОцени, правильно ли ответ." 
+        "content": content
     }
     
     try:
@@ -105,4 +182,106 @@ def check_answer(
             "feedback": "Произошла ошибка при проверке ответа. Пожалуйста, попробуйте еще раз.",
             "correct_answer": exercise["correct_answer"],
             "error": str(e)
-        } 
+        }
+
+def get_llm_explanation_for_wrong_answer(
+    exercise: Dict[str, Any],
+    user_answer: str,
+    user_comment: str = "",
+    settings_path: str = "settings.json"
+) -> str:
+    """Получает объяснение от нейросети, почему ответ пользователя неверен.
+    
+    Args:
+        exercise: Словарь с данными упражнения
+        user_answer: Ответ пользователя
+        user_comment: Комментарий пользователя к ответу
+        settings_path: Путь к файлу настроек
+        
+    Returns:
+        Текст объяснения от нейросети или пустая строка в случае ошибки
+    """
+    # Загружаем настройки
+    settings = load_settings(settings_path)
+    
+    # Преобразуем числовые ответы пользователя в текстовые варианты для лучшего понимания нейросетью
+    user_answer_text = []
+    correct_answer_text = []
+    options = exercise.get("options", [])
+    
+    # Преобразуем ответ пользователя в текстовые варианты
+    try:
+        user_indices = [int(idx.strip()) for idx in user_answer.split(',')]
+        for idx in user_indices:
+            if 1 <= idx <= len(options):
+                user_answer_text.append(options[idx-1])
+    except ValueError:
+        user_answer_text = [user_answer]  # Если не удалось разобрать как числа
+    
+    # Преобразуем правильный ответ в текстовые варианты
+    correct_answer = exercise["correct_answer"]
+    if isinstance(correct_answer, list):
+        correct_answer_text = correct_answer
+    else:
+        # Пытаемся разобрать строку с запятыми
+        try:
+            correct_indices = [int(idx.strip()) for idx in correct_answer.split(',')]
+            for idx in correct_indices:
+                if 1 <= idx <= len(options):
+                    correct_answer_text.append(options[idx-1])
+        except ValueError:
+            # Если не удалось разобрать как числа, используем оригинальный правильный ответ
+            correct_answer_text = [ans.strip() for ans in correct_answer.split(',')]
+    
+    # Формируем системное сообщение
+    system_message = {
+        "role": "system",
+        "content": """Ты - опытный преподаватель, объясняющий студентам их ошибки в тестах с несколькими правильными ответами.
+Твоя задача - объяснить студенту, почему его ответ неверен, и почему правильные варианты являются верными.
+Объяснение должно быть подробным, но при этом кратким и понятным.
+Не используй фразы вроде "Ваш ответ неверен" или "Правильный ответ", а сразу переходи к объяснению.
+"""
+    }
+    
+    # Формируем сообщение с упражнением и ответом пользователя
+    content = f"Вопрос: {exercise.get('question')}\n\n"
+    
+    # Добавляем варианты ответов
+    content += "Варианты ответов:\n"
+    for i, option in enumerate(options, 1):
+        content += f"{i}. {option}\n"
+    content += "\n"
+    
+    # Добавляем правильный ответ и ответ пользователя в текстовом виде
+    content += f"Правильный ответ: {', '.join(correct_answer_text)}\n"
+    content += f"Ответ студента: {', '.join(user_answer_text)}\n\n"
+    
+    # Добавляем комментарий пользователя, если он есть
+    if user_comment:
+        content += f"Комментарий студента: {user_comment}\n\n"
+    
+    content += "Объясни, почему правильными являются указанные варианты, и почему выбор студента неверен."
+    
+    user_message = {
+        "role": "user",
+        "content": content
+    }
+    
+    try:
+        # Отправляем запрос к API
+        response = send_chat_completion(
+            api_endpoint=settings["api_endpoint"],
+            model=settings["model"],
+            messages=[system_message, user_message],
+            max_tokens=settings["max_tokens"],
+            temperature=0.3
+        )
+        
+        # Извлекаем текст из ответа
+        explanation = get_completion_text(response)
+        
+        return explanation if explanation else ""
+    
+    except Exception as e:
+        print(f"Ошибка при получении объяснения от нейросети: {e}")
+        return "" 

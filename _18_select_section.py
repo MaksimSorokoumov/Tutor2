@@ -1,7 +1,30 @@
 """Модуль для выбора раздела курса."""
 
+import os
+import json
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QListWidget, QPushButton, QMessageBox
 from _15_log_error import log_error
+
+def get_course_sections(course_dir):
+    """Получает список разделов курса из его директории.
+    
+    Args:
+        course_dir: Путь к директории курса
+        
+    Returns:
+        list: Список разделов курса (каждый раздел - словарь)
+    """
+    try:
+        structure_file = os.path.join(course_dir, "structure.json")
+        
+        if not os.path.exists(structure_file):
+            return []
+        
+        with open(structure_file, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        log_error(f"Ошибка при загрузке структуры курса: {str(e)}")
+        return []
 
 def select_section(parent, course_structure):
     """Показывает диалог выбора раздела курса.

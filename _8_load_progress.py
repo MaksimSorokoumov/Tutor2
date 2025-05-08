@@ -20,4 +20,13 @@ def load_progress(progress_path: str) -> Dict[str, Any]:
         raise FileNotFoundError(f"Файл прогресса не найден: {progress_path}")
     
     with open(progress_path, 'r', encoding='utf-8') as f:
-        return json.load(f) 
+        progress = json.load(f)
+    
+    # Проверяем и обновляем структуру, если необходимо
+    if "sections" in progress:
+        for section_id, section_data in progress["sections"].items():
+            # Добавляем поле "answered", если его нет
+            if "answered" not in section_data:
+                section_data["answered"] = []
+                
+    return progress 
