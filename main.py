@@ -51,7 +51,7 @@ class MainWindow(QMainWindow):
         self.current_course_dir = ""
         self.current_course_structure = []
         self.current_section = None
-        self.progress = {}
+        self.progress = {"sections": {}}  # Инициализируем структуру progress с пустым разделом sections
         self.current_stage = 0  # Этап обучения (0, 1 или 2)
         self.previous_questions = []  # Список предыдущих вопросов для избежания повторений
         
@@ -61,6 +61,7 @@ class MainWindow(QMainWindow):
         
         # Главный макет - горизонтальный для трех панелей
         main_layout = QHBoxLayout()
+        main_layout.setSpacing(10)  # Добавляем отступ между панелями
         
         # Панель 1: Исходный текст
         text_panel = QWidget()
@@ -68,15 +69,19 @@ class MainWindow(QMainWindow):
         
         self.text_label = QLabel("Исходный текст")
         self.text_label.setFont(QFont("Arial", 12, QFont.Bold))
+        self.text_label.setWordWrap(True)
+        self.text_label.setMinimumHeight(40)
         
         self.text_edit = QTextEdit()
         self.text_edit.setReadOnly(True)
         
         text_buttons_layout = QHBoxLayout()
         self.copy_text_btn = QPushButton("Копировать")
+        self.toc_btn = QPushButton("Оглавление")
         self.explain_btn = QPushButton("Объяснить")
         
         text_buttons_layout.addWidget(self.copy_text_btn)
+        text_buttons_layout.addWidget(self.toc_btn)
         text_buttons_layout.addWidget(self.explain_btn)
         
         text_layout.addWidget(self.text_label)
@@ -84,6 +89,7 @@ class MainWindow(QMainWindow):
         text_layout.addLayout(text_buttons_layout)
         
         text_panel.setLayout(text_layout)
+        text_panel.setMinimumWidth(300)
         
         # Панель 2: Объяснение
         explanation_panel = QWidget()
@@ -91,6 +97,8 @@ class MainWindow(QMainWindow):
         
         self.explanation_label = QLabel("Объяснение")
         self.explanation_label.setFont(QFont("Arial", 12, QFont.Bold))
+        self.explanation_label.setWordWrap(True)
+        self.explanation_label.setMinimumHeight(40)
         
         self.explanation_edit = QTextEdit()
         self.explanation_edit.setReadOnly(True)
@@ -116,6 +124,7 @@ class MainWindow(QMainWindow):
         explanation_layout.addLayout(explanation_feedback_layout)
         
         explanation_panel.setLayout(explanation_layout)
+        explanation_panel.setMinimumWidth(300)
         
         # Панель 3: Упражнения
         exercise_panel = QWidget()
@@ -123,6 +132,8 @@ class MainWindow(QMainWindow):
         
         self.exercise_label = QLabel("Упражнение")
         self.exercise_label.setFont(QFont("Arial", 12, QFont.Bold))
+        self.exercise_label.setWordWrap(True)
+        self.exercise_label.setMinimumHeight(40)
         
         self.exercise_edit = QTextEdit()
         self.exercise_edit.setReadOnly(True)
@@ -158,11 +169,12 @@ class MainWindow(QMainWindow):
         exercise_layout.addWidget(self.result_edit)
         
         exercise_panel.setLayout(exercise_layout)
+        exercise_panel.setMinimumWidth(300)
         
-        # Добавляем панели в главный макет
-        main_layout.addWidget(text_panel, 1)
-        main_layout.addWidget(explanation_panel, 1)
-        main_layout.addWidget(exercise_panel, 1)
+        # Добавляем панели в главный макет с минимальной шириной и соотношением растяжения
+        main_layout.addWidget(text_panel, 3)
+        main_layout.addWidget(explanation_panel, 3)
+        main_layout.addWidget(exercise_panel, 4)
         
         central_widget.setLayout(main_layout)
         
@@ -214,6 +226,7 @@ class MainWindow(QMainWindow):
     def connect_signals(self):
         """Привязывает обработчики событий к виджетам."""
         self.copy_text_btn.clicked.connect(self.copy_text)
+        self.toc_btn.clicked.connect(self.open_toc)
         self.explain_btn.clicked.connect(self.generate_explanation)
         
         self.copy_explanation_btn.clicked.connect(self.copy_explanation)
@@ -358,6 +371,24 @@ class MainWindow(QMainWindow):
         if success:
             # Обновляем меню курсов после создания нового курса
             update_courses_menu(self)
+
+    def open_toc(self):
+        """Открывает оглавление курса для выбора раздела."""
+        # Проверяем, открыт ли курс
+        if not self.current_course_dir or not self.current_course_structure:
+            QMessageBox.warning(self, "Предупреждение", "Необходимо открыть курс для доступа к оглавлению.")
+            return
+            
+        # Показываем диалог выбора раздела
+        section = select_section(self, self.current_course_structure)
+        
+        # Если пользователь выбрал раздел, отображаем его
+        if section:
+            self.display_section(section)
+            
+            # Сбрасываем current_stage на первый этап для нового раздела
+            self.current_stage = 0
+            self.update_stage_text()
 
     # Добавляем метод открытия курса по пути
     def open_course_by_path(self, course_path):

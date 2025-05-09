@@ -114,6 +114,7 @@ def open_course_by_path(main_window, course_path: str) -> None:
     """
     try:
         from _6_load_course_structure import load_course_structure
+        from _8_load_progress import load_progress
         
         # Проверяем, что директория существует
         if not os.path.exists(course_path):
@@ -124,6 +125,25 @@ def open_course_by_path(main_window, course_path: str) -> None:
         # Загружаем структуру курса
         structure_path = os.path.join(course_path, "structure.json")
         structure = load_course_structure(structure_path)
+        
+        # Загружаем прогресс пользователя
+        progress_path = os.path.join(course_path, "progress.json")
+        try:
+            progress = load_progress(progress_path)
+            main_window.progress = progress
+        except Exception as e:
+            from _15_log_error import log_error
+            log_error(f"Ошибка при загрузке прогресса: {str(e)}")
+            # Создаем пустой прогресс если файл не найден
+            main_window.progress = {"sections": {}}
+            for section in structure:
+                section_id = section["id"]
+                main_window.progress["sections"][str(section_id)] = {
+                    "completed": False,
+                    "exercises_completed": 0,
+                    "last_viewed": None,
+                    "answered": []
+                }
         
         # Устанавливаем текущую директорию курса
         main_window.current_course_dir = course_path

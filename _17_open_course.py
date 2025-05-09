@@ -3,6 +3,7 @@
 import os
 from PyQt5.QtWidgets import QMessageBox, QFileDialog
 from _6_load_course_structure import load_course_structure
+from _8_load_progress import load_progress
 from _15_log_error import log_error
 
 def open_course(parent):
@@ -30,6 +31,24 @@ def open_course(parent):
         
         # Загружаем структуру курса
         structure = load_course_structure(structure_path)
+        
+        # Загружаем прогресс пользователя
+        progress_path = os.path.join(directory, "progress.json")
+        try:
+            progress = load_progress(progress_path)
+            parent.progress = progress
+        except Exception as e:
+            log_error(f"Ошибка при загрузке прогресса: {str(e)}")
+            # Создаем пустой прогресс если файл не найден
+            parent.progress = {"sections": {}}
+            for section in structure:
+                section_id = section["id"]
+                parent.progress["sections"][str(section_id)] = {
+                    "completed": False,
+                    "exercises_completed": 0,
+                    "last_viewed": None,
+                    "answered": []
+                }
         
         # Запоминаем этот курс в настройках
         add_course_to_recent(directory, parent.settings)

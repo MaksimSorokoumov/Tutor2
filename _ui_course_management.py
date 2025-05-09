@@ -59,6 +59,26 @@ def create_course_structure(parent):
         if not os.path.exists(progress_dir):
             os.makedirs(progress_dir)
             
+        # Инициализируем пустой прогресс для всех разделов
+        progress = {
+            "book_path": text_path,
+            "sections": {}
+        }
+        
+        for section in structure:
+            section_id = section["id"]
+            progress["sections"][str(section_id)] = {
+                "completed": False,
+                "exercises_completed": 0,
+                "last_viewed": None,
+                "answered": []
+            }
+        
+        # Сохраняем прогресс в progress.json
+        progress_path = os.path.join(course_dir, "progress.json")
+        with open(progress_path, 'w', encoding='utf-8') as f:
+            json.dump(progress, f, ensure_ascii=False, indent=2)
+            
         # Устанавливаем текущую директорию курса
         parent.current_course_dir = course_dir
         parent.current_course_structure = structure
@@ -76,6 +96,9 @@ def create_course_structure(parent):
         # Запоминаем этот курс в настройках
         from _17_open_course import add_course_to_recent
         add_course_to_recent(course_dir, parent.settings)
+        
+        # Устанавливаем прогресс в главном окне
+        parent.progress = progress
         
         return True
             
