@@ -29,6 +29,7 @@ from _ui_exercise_generation import (generate_exercise, check_answer, update_sta
                                        next_stage)
 from _ui_course_management import (create_course_structure, open_course, display_section,
                                      create_new_course)
+from _ui_main_window import update_courses_menu, open_course_by_path
 
 class MainWindow(QMainWindow):
     """Главное окно приложения Tutor."""
@@ -180,12 +181,15 @@ class MainWindow(QMainWindow):
         
         # Меню "Файл"
         file_menu = menubar.addMenu("Файл")
+        file_menu.setObjectName("file_menu")  # Устанавливаем objectName для поиска меню
         
         create_new_course_action = file_menu.addAction("Создать новый курс...")
         create_new_course_action.triggered.connect(self.create_new_course)
         
         open_course_action = file_menu.addAction("Открыть курс...")
         open_course_action.triggered.connect(self.open_course)
+        
+        # Подменю доступных курсов будет добавлено в update_courses_menu
         
         file_menu.addSeparator()
         
@@ -203,6 +207,9 @@ class MainWindow(QMainWindow):
         
         about_action = help_menu.addAction("О программе")
         about_action.triggered.connect(self.show_about)
+        
+        # Обновляем меню курсов
+        update_courses_menu(self)
     
     def connect_signals(self):
         """Привязывает обработчики событий к виджетам."""
@@ -329,7 +336,17 @@ class MainWindow(QMainWindow):
     
     def open_course(self):
         """Открывает созданный курс."""
-        open_course(self)
+        success, directory, structure = open_course(self)
+        if success:
+            self.current_course_dir = directory
+            self.current_course_structure = structure
+            
+            # Отображаем первый раздел, если он есть
+            if structure and len(structure) > 0:
+                self.display_section(structure[0])
+                
+            # Обновляем меню курсов
+            update_courses_menu(self)
     
     def display_section(self, section):
         """Отображает содержимое раздела в интерфейсе."""
@@ -337,7 +354,17 @@ class MainWindow(QMainWindow):
 
     def create_new_course(self):
         """Создает новый курс в одно действие (открытие книги + создание структуры)."""
-        create_new_course(self)
+        success = create_new_course(self)
+        if success:
+            # Обновляем меню курсов после создания нового курса
+            update_courses_menu(self)
+
+    # Добавляем метод открытия курса по пути
+    def open_course_by_path(self, course_path):
+        """Открывает курс по указанному пути."""
+        open_course_by_path(self, course_path)
+        # Обновляем меню курсов после открытия
+        update_courses_menu(self)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

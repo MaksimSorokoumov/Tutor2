@@ -4,5 +4,8 @@
   "max_tokens": 8000,
   "temperature": 0.5,
   "detail_level": "средний",
-  "difficulty": "средний"
-} 
+  "difficulty": "средний",
+  "recent_courses": [
+    "G:/Tutor2/course_data"
+  ]
+}
