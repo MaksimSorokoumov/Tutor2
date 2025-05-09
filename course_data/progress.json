@@ -1,321 +1,543 @@
 {
-  "book_path": "C:\\Users\\maxim\\AppData\\Local\\Temp\\tmphqr8k1sr.txt",
   "sections": {
     "1": {
       "completed": false,
-      "exercises_completed": 8,
+      "exercises_completed": 0,
       "last_viewed": null,
-      "answered": [
-        "Согласно тексту, что является предметом изучения науки логики?",
-        "В каких ситуациях, согласно тексту, мы обязательно мыслим?",
-        "Какова основная функция логики, согласно мнению Джона Стюарта Милля?",
-        "Какова основная задача науки логики?",
-        "Какова основная цель науки логики, согласно тексту?",
-        "Какую роль играет логика в судебной практике, согласно тексту?",
-        "Какова взаимосвязь между логикой и специальными знаниями, согласно тексту?",
-        "Какие функции логики в процессе мышления указаны в тексте?"
-      ]
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "2": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "3": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "4": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "5": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "6": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "7": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "8": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "9": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "10": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "11": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "12": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "13": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "14": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "15": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "16": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "17": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "18": {
       "completed": false,
-      "exercises_completed": 7,
+      "exercises_completed": 0,
       "last_viewed": null,
-      "answered": [
-        "Какова основная цель изучения логики?",
-        "Какие правила лежат в основе всех остальных логических правил?",
-        "Сколько основных законов мышления существует согласно тексту?",
-        "Какие из перечисленных законов относятся к основным законам логического мышления согласно тексту?",
-        "Какая наука изучает законы правильного мышления?",
-        "Как называются наиболее общие правила мышления, на которых основаны все остальные логические правила?",
-        "Сколько основных законов мышления существует?"
-      ]
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "19": {
       "completed": false,
-      "exercises_completed": 4,
+      "exercises_completed": 0,
       "last_viewed": null,
-      "answered": [
-        "Какое из утверждений корректно иллюстрирует закон тождества согласо примерам в тексте?",
-        "Какое значение закона тождества объясняет, почему в судебной практике проверяют самоличность подсудимого?",
-        "Какое утверждение соответствует четвертому значению закона тождества?",
-        "Как нарушение закона тождества при использовании одного термина в различных смыслах может привести к ошибкам в судебной практике? Приведите пример из текста и объясните, почему это важно для правильного разрешения дела."
-      ]
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "20": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "21": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "22": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "23": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "24": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "25": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "26": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "27": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "28": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "29": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "30": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "31": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "32": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "33": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "34": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "35": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "36": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "37": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "38": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "39": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "40": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "41": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "42": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "43": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "44": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "45": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "46": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "47": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "48": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     },
     "49": {
       "completed": false,
       "exercises_completed": 0,
       "last_viewed": null,
-      "answered": []
+      "answered": [],
+      "exercises": [],
+      "evaluation": {
+        "score": null,
+        "comment": ""
+      }
     }
   }
 }

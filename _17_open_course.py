@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import QMessageBox, QFileDialog
 from _6_load_course_structure import load_course_structure
 from _8_load_progress import load_progress
 from _15_log_error import log_error
+from _9_save_progress import save_progress
 
 def open_course(parent):
     """Открывает созданный курс.
@@ -47,8 +48,12 @@ def open_course(parent):
                     "completed": False,
                     "exercises_completed": 0,
                     "last_viewed": None,
-                    "answered": []
+                    "answered": [],
+                    "exercises": [],           # история ответов
+                    "evaluation": {"score": None, "comment": ""}  # оценка раздела
                 }
+            # Сохраняем новый прогресс
+            save_progress(progress_path, parent.progress)
         
         # Запоминаем этот курс в настройках
         add_course_to_recent(directory, parent.settings)

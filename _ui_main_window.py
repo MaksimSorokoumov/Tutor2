@@ -142,8 +142,13 @@ def open_course_by_path(main_window, course_path: str) -> None:
                     "completed": False,
                     "exercises_completed": 0,
                     "last_viewed": None,
-                    "answered": []
+                    "answered": [],
+                    "exercises": [],
+                    "evaluation": {"score": None, "comment": ""}
                 }
+            # Сохраняем новый прогресс
+            from _9_save_progress import save_progress
+            save_progress(progress_path, main_window.progress)
         
         # Устанавливаем текущую директорию курса
         main_window.current_course_dir = course_path

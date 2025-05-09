@@ -57,7 +57,15 @@ def select_section(parent, course_structure):
     
     # Заполняем список разделов
     for section in course_structure:
-        section_list.addItem(f"{section['id']}. {section['title']}")
+        # Добавляем оценку раздела, если есть
+        sid = str(section['id'])
+        score = None
+        if hasattr(parent, 'progress') and sid in parent.progress.get('sections', {}):
+            score = parent.progress['sections'][sid].get('evaluation', {}).get('score')
+        if score:
+            section_list.addItem(f"{section['id']}. {section['title']} (Оценка: {score})")
+        else:
+            section_list.addItem(f"{section['id']}. {section['title']}")
     
     # Сохраняем исходные данные в свойстве списка
     section_list.setProperty("sections", course_structure)

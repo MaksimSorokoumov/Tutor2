@@ -48,7 +48,9 @@ def initialize_course(book_path: str, output_dir: str) -> None:
             "completed": False,
             "exercises_completed": 0,
             "last_viewed": None,
-            "answered": []
+            "answered": [],
+            "exercises": [],           # история ответов пользователя
+            "evaluation": {"score": None, "comment": ""}  # оценка раздела
         }
     
     # Сохраняем прогресс в progress.json

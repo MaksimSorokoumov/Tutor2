@@ -55,15 +55,42 @@ def check_single_exercise(window, exercise_index):
         # Проверяем ответ
         result = check_answer_llm(exercise, user_answer, "")
         
-        # Обновляем историю в progress при правильном ответе
-        if window.current_course_dir and result.get("is_correct", False):
+        # Записываем попытку в историю exercises и обновляем прогресс
+        if window.current_course_dir:
             sid = str(window.current_section['id'])
-            qtext = exercise['question']
             sp = window.progress['sections'][sid]
-            if qtext not in sp['answered']:
-                sp['answered'].append(qtext)
-                sp['exercises_completed'] += 1
-                save_progress(os.path.join(window.current_course_dir, "progress.json"), window.progress)
+            # Для тестов сохраняем все варианты и преобразуем ответ в текст
+            options = exercise.get("options", [])
+            if window.current_stage == 0:
+                try:
+                    idx = int(user_answer.strip()) - 1
+                    user_answer_text = options[idx] if 0 <= idx < len(options) else user_answer
+                except:
+                    user_answer_text = user_answer
+            else:
+                # множественный выбор
+                user_answer_text = []
+                for part in user_answer.split(","):
+                    part = part.strip()
+                    if part.isdigit():
+                        i = int(part) - 1
+                        if 0 <= i < len(options):
+                            user_answer_text.append(options[i])
+            entry = {
+                "question": exercise['question'],
+                "stage": window.current_stage,
+                "options": options,
+                "user_answer": user_answer_text,
+                "correct_answer": result.get('correct_answer'),
+                "is_correct": bool(result.get('is_correct', False))
+            }
+            sp['exercises'].append(entry)
+            # Обновляем количество правильных ответов
+            sp['exercises_completed'] = sum(1 for e in sp['exercises'] if e['is_correct'])
+            # Добавляем в список answered для обратной совместимости
+            if entry['is_correct'] and entry['question'] not in sp.get('answered', []):
+                sp.setdefault('answered', []).append(entry['question'])
+            save_progress(os.path.join(window.current_course_dir, "progress.json"), window.progress)
         
         # Форматируем результат
         if result.get("is_correct", False):
@@ -242,15 +269,42 @@ def check_answer(window):
         # Проверяем ответ с учетом комментария пользователя
         result = check_answer_llm(exercise, user_answer, user_comment)
         
-        # Обновляем историю в progress при правильном ответе
-        if window.current_course_dir and result.get("is_correct", False):
+        # Записываем попытку в историю exercises и обновляем прогресс
+        if window.current_course_dir:
             sid = str(window.current_section['id'])
-            qtext = exercise['question']
             sp = window.progress['sections'][sid]
-            if qtext not in sp['answered']:
-                sp['answered'].append(qtext)
-                sp['exercises_completed'] += 1
-                save_progress(os.path.join(window.current_course_dir, "progress.json"), window.progress)
+            # Для тестов сохраняем все варианты и преобразуем ответ в текст
+            options = exercise.get("options", [])
+            if window.current_stage == 0:
+                try:
+                    idx = int(user_answer.strip()) - 1
+                    user_answer_text = options[idx] if 0 <= idx < len(options) else user_answer
+                except:
+                    user_answer_text = user_answer
+            else:
+                # множественный выбор
+                user_answer_text = []
+                for part in user_answer.split(","):
+                    part = part.strip()
+                    if part.isdigit():
+                        i = int(part) - 1
+                        if 0 <= i < len(options):
+                            user_answer_text.append(options[i])
+            entry = {
+                "question": exercise['question'],
+                "stage": window.current_stage,
+                "options": options,
+                "user_answer": user_answer_text,
+                "correct_answer": result.get('correct_answer'),
+                "is_correct": bool(result.get('is_correct', False))
+            }
+            sp['exercises'].append(entry)
+            # Обновляем количество правильных ответов
+            sp['exercises_completed'] = sum(1 for e in sp['exercises'] if e['is_correct'])
+            # Добавляем в список answered для обратной совместимости
+            if entry['is_correct'] and entry['question'] not in sp.get('answered', []):
+                sp.setdefault('answered', []).append(entry['question'])
+            save_progress(os.path.join(window.current_course_dir, "progress.json"), window.progress)
         
         # Форматируем результат для открытых вопросов
         result_text = ""

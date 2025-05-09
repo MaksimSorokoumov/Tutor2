@@ -145,10 +145,13 @@ class MainWindow(QMainWindow):
         self.check_btn = QPushButton("Проверить ответ")
         self.next_exercise_btn = QPushButton("Новое упражнение")
         self.next_stage_btn = QPushButton("Следующий этап")
+        # Кнопка для обновления оценки раздела
+        self.update_results_btn = QPushButton("Обновить результаты")
         
         exercise_buttons_layout.addWidget(self.check_btn)
         exercise_buttons_layout.addWidget(self.next_exercise_btn)
         exercise_buttons_layout.addWidget(self.next_stage_btn)
+        exercise_buttons_layout.addWidget(self.update_results_btn)
         
         self.result_label = QLabel("Результат проверки")
         self.result_edit = QTextEdit()
@@ -236,6 +239,7 @@ class MainWindow(QMainWindow):
         self.check_btn.clicked.connect(self.check_answer)
         self.next_exercise_btn.clicked.connect(self.generate_exercise)
         self.next_stage_btn.clicked.connect(self.next_stage)
+        self.update_results_btn.clicked.connect(self.update_evaluation)
     
     def load_demo_text(self):
         """Загружает приветственный текст и справку."""
@@ -396,6 +400,19 @@ class MainWindow(QMainWindow):
         open_course_by_path(self, course_path)
         # Обновляем меню курсов после открытия
         update_courses_menu(self)
+
+    def update_evaluation(self):
+        """Пересчитывает и сохраняет оценку раздела через LLM"""
+        if not self.current_course_dir or not self.current_section:
+            QMessageBox.warning(self, "Предупреждение", "Откройте раздел курса для обновления результатов.")
+            return
+        from _20_evaluate_section import evaluate_section
+        sid = str(self.current_section['id'])
+        res = evaluate_section(self.progress, sid)
+        # Сохраняем результат оценки в прогрессе
+        self.progress['sections'][sid]['evaluation'] = res
+        save_progress(os.path.join(self.current_course_dir, "progress.json"), self.progress)
+        QMessageBox.information(self, "Результаты обновлены", f"Оценка: {res['score']}\nКомментарий: {res['comment']}")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

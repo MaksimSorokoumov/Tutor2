@@ -28,5 +28,10 @@ def load_progress(progress_path: str) -> Dict[str, Any]:
             # Добавляем поле "answered", если его нет
             if "answered" not in section_data:
                 section_data["answered"] = []
+            # Добавляем историю упражнений и оценку, если их нет
+            if "exercises" not in section_data:
+                section_data["exercises"] = []
+            if "evaluation" not in section_data:
+                section_data["evaluation"] = {"score": None, "comment": ""}
                 
     return progress 
