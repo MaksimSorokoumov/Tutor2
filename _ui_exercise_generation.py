@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QFont, QColor
 from PyQt5.QtCore import Qt, QEvent
 
-from _13_generate_exercises import generate_exercises as generate_exercises_llm
+from _ui_exercise_generation_retry import generate_exercises as generate_exercises_llm
 from _14_check_answer import check_answer as check_answer_llm
 from _9_save_progress import save_progress
 from _15_log_error import log_error
