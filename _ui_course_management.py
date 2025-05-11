@@ -133,7 +133,7 @@ def display_section(parent, section):
         parent.current_section = section
         
         # Отображаем текст раздела
-        parent.text_edit.setText(section["content"])
+        parent.text_edit.setHtml(section["content"])
         parent.current_text = section["content"]
         
         # Устанавливаем заголовок текста

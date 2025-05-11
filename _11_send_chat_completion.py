@@ -49,7 +49,7 @@ def send_chat_completion(
             completion_url, 
             data=json.dumps(payload), 
             headers=headers,
-            timeout=120  # Увеличенный таймаут (2 минуты)
+            timeout=240  # Увеличенный таймаут (4 минуты)
         )
         response.raise_for_status()  # Вызовет исключение при ошибках HTTP
         

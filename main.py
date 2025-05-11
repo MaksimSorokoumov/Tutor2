@@ -217,6 +217,9 @@ class MainWindow(QMainWindow):
         settings_action = tools_menu.addAction("Настройки...")
         settings_action.triggered.connect(self.show_settings)
         
+        format_action = tools_menu.addAction("Форматировать материал")
+        format_action.triggered.connect(self.format_material)
+        
         # Меню "Справка"
         help_menu = menubar.addMenu("Справка")
         
@@ -346,6 +349,29 @@ class MainWindow(QMainWindow):
             "Версия: 1.0\n\n"
             "Приложение для интерактивного обучения с использованием нейросети для генерации объяснений и упражнений."
         )
+    
+    def format_material(self):
+        """Форматирует текст разделов курса через LLM."""
+        if not self.current_course_dir:
+            QMessageBox.warning(self, "Предупреждение", "Откройте курс, чтобы форматировать материал.")
+            return
+        from _2_1_format_text import format_sections
+        from _6_load_course_structure import load_course_structure
+        structure_path = os.path.join(self.current_course_dir, "structure.json")
+        try:
+            format_sections(structure_path)
+            # Перезагрузить структуру
+            self.current_course_structure = load_course_structure(structure_path)
+            # Отобразить текущий раздел заново, если он существует
+            if self.current_section:
+                for sec in self.current_course_structure:
+                    if sec['id'] == self.current_section['id']:
+                        self.display_section(sec)
+                        break
+            QMessageBox.information(self, "Информация", "Материал разделов отформатирован и обновлён.")
+        except Exception as e:
+            log_error(e)
+            QMessageBox.critical(self, "Ошибка", f"Не удалось форматировать материал: {e}")
     
     def create_course_structure(self):
         """Создает структуру курса на основе загруженной книгу."""
