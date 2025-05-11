@@ -3,7 +3,7 @@
 import os
 from PyQt5.QtWidgets import QMessageBox, QFileDialog
 from _15_log_error import log_error, log_info
-from _16_create_course_structure import create_course_structure as create_struct
+from _2_parse_structure import parse_structure
 from _17_open_course import open_course as open_course_func
 from _18_select_section import select_section, get_course_sections
 
@@ -40,8 +40,8 @@ def create_course_structure(parent):
         if not os.path.exists(course_dir):
             os.makedirs(course_dir)
             
-        # Создаем структуру курса
-        structure = create_struct(parent.current_text)
+        # Создаем структуру курса по маркерам разделов
+        structure = parse_structure(parent.current_text)
         
         # Сохраняем структуру в JSON
         structure_path = os.path.join(course_dir, "structure.json")

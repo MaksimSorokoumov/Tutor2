@@ -4,5 +4,8 @@
   "model": "local",
   "api_endpoint": "http://localhost:1234/v1",
   "max_tokens": 8000,
-  "temperature": 0.5
+  "temperature": 0.5,
+  "recent_courses": [
+    "D:/Курс_логика\\Логика - для военно юрфака"
+  ]
 }
