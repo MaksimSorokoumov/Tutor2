@@ -52,8 +52,11 @@ def check_single_exercise(window, exercise_index):
         else:  # Открытый вопрос (обрабатывается отдельной функцией)
             return
         
+        # Получаем комментарий пользователя, если он есть
+        comment_edit = exercise['ui'].get('comment_edit')
+        user_comment = comment_edit.toPlainText().strip() if comment_edit else ""
         # Проверяем ответ
-        result = check_answer_llm(exercise, user_answer, "")
+        result = check_answer_llm(exercise, user_answer, user_comment)
         
         # Записываем попытку в историю exercises и обновляем прогресс
         if window.current_course_dir:

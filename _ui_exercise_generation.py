@@ -4,7 +4,7 @@ import os
 from PyQt5.QtWidgets import (
     QMessageBox, QApplication, QLabel, QRadioButton, QCheckBox, 
     QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QButtonGroup, QFrame,
-    QScrollArea, QSizePolicy
+    QScrollArea, QSizePolicy, QTextEdit
 )
 from PyQt5.QtGui import QFont, QColor
 from PyQt5.QtCore import Qt, QEvent
@@ -280,6 +280,17 @@ def generate_exercise(window):
                 
                 exercise_layout.addLayout(options_layout)
                 
+                # Добавляем поле для комментария пользователя при множественном выборе
+                if window.current_stage == 1:
+                    comment_label = QLabel("Комментарий (необязательно):")
+                    comment_label.setWordWrap(True)
+                    exercise_layout.addWidget(comment_label)
+                    comment_edit = QTextEdit()
+                    comment_edit.setFixedHeight(60)
+                    exercise_layout.addWidget(comment_edit)
+                else:
+                    comment_edit = None
+                
                 # Кнопки и результаты в горизонтальном layout
                 button_result_layout = QHBoxLayout()
                 
@@ -306,7 +317,8 @@ def generate_exercise(window):
                     'button_group': button_group,
                     'options_widgets': options_widgets,  # Используем подготовленный список
                     'result_label': result_label,
-                    'check_button': check_btn
+                    'check_button': check_btn,
+                    'comment_edit': comment_edit
                 }
                 
                 # Добавляем фрейм упражнения в контейнер
@@ -318,7 +330,10 @@ def generate_exercise(window):
                     separator.setFrameShape(QFrame.HLine)
                     separator.setFrameShadow(QFrame.Sunken)
                     window.exercise_container.layout().addWidget(separator)
-            
+                
+                # Сохраняем контекст учебного материала для LLM проверки
+                exercise['context'] = window.current_text
+        
         # Обновляем интерфейс
         QApplication.processEvents()
         

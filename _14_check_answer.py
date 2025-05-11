@@ -38,24 +38,61 @@ def check_answer(
                                              "тест с единственным правильным ответом"]:
         return check_single_choice_answer(exercise, user_answer)
     
-    # Для тестов с множественным выбором (этап 1) также используем локальную проверку
+    # Для тестов с множественным выбором (этап 1) сначала выполняем локальную проверку
     if stage == 1 and exercise.get("type") in ["тесты с несколькими правильными ответами",
-                                             "тест с несколькими правильными ответами"]:
-        result = check_multiple_choice_answer(exercise, user_answer)
-        
-        # Если ответ неправильный и есть возможность использовать нейросеть
-        # добавляем подробное объяснение от нейросети
-        if not result["is_correct"]:
+                                              "тест с несколькими правильными ответами"]:
+        local = check_multiple_choice_answer(exercise, user_answer)
+        # Если локально правильно — возвращаем результат
+        if local["is_correct"]:
+            return local
+        # Если есть комментарий — доверяем LLM для финальной оценки с учётом учебного материала
+        if user_comment.strip():
             try:
-                explanation = get_llm_explanation_for_wrong_answer(exercise, user_answer, user_comment, settings_path)
-                if explanation:
-                    # Добавляем объяснение от нейросети к базовому отзыву
-                    result["feedback"] += "\n\n" + explanation
+                mm_context = exercise.get("context", "")
+                system_message = {
+                    "role": "system",
+                    "content": "Ты — опытный преподаватель, проверяющий тесты с несколькими правильными ответами. Учитывай учебный материал и комментарий студента. Если аргументы студента обоснованы и верны по материалу, ответ считаем правильным. Формат: {'is_correct': true/false, 'feedback': 'объяснение'}"
+                }
+                user_content = (
+                    f"Учебный материал:\n{mm_context}\n\n"
+                    f"Вопрос: {exercise.get('question')}\n"
+                    "Варианты:\n"
+                    + "".join(f"{i}. {opt}\n" for i, opt in enumerate(exercise.get('options', []), 1))
+                    + f"Правильный ответ: {exercise.get('correct_answer')}\n"
+                    f"Ответ студента: {user_answer}\n"
+                    f"Комментарий студента: {user_comment}\n\n"
+                    "Оцени, правильно ли ответил студент и дай подробный, но лаконичный отзыв."
+                )
+                user_message = {"role": "user", "content": user_content}
+                settings = load_settings(settings_path)
+                resp = send_chat_completion(
+                    api_endpoint=settings["api_endpoint"], model=settings["model"],
+                    messages=[system_message, user_message],
+                    max_tokens=settings["max_tokens"], temperature=0.3
+                )
+                text = get_completion_text(resp)
+                json_text = text.strip()
+                if json_text.startswith("```json"):
+                    json_text = json_text.split("```json", 1)[1]
+                if json_text.startswith("```"):
+                    json_text = json_text.split("```", 1)[1]
+                if json_text.endswith("```"):
+                    json_text = json_text.rsplit("```", 1)[0]
+                try:
+                    llm_res = json.loads(json_text)
+                    return llm_res
+                except Exception:
+                    pass
             except Exception as e:
-                print(f"Ошибка при получении объяснения от нейросети: {e}")
-                # В случае ошибки оставляем базовый отзыв
-        
-        return result
+                print(f"Ошибка при полной LLM-проверке: {e}")
+        # Иначе — возвращаем локальный с добавлением пояснения
+        try:
+            explanation = get_llm_explanation_for_wrong_answer(exercise, user_answer, user_comment, settings_path)
+            if explanation:
+                local["feedback"] += "\n\n" + explanation
+        except Exception as e:
+            print(f"Ошибка при получении объяснения от нейросети: {e}")
+        return local
     
     # Для открытых вопросов (этап 2) используем проверку через нейросеть
     # Загружаем настройки
@@ -114,7 +151,11 @@ def check_answer(
             content += f"{i}. {option}\n"
         content += "\n"
     
-    content += f"Правильный ответ: {exercise.get('correct_answer')}\n\n"
+    if 'correct_answer' in exercise:
+        content += f"Правильный ответ: {exercise['correct_answer']}\n\n"
+    elif 'model_answer' in exercise:
+        content += f"Модельный ответ: {exercise['model_answer']}\n\n"
+    
     content += f"Ответ студента: {user_answer}\n"
     
     # Добавляем комментарий пользователя, если он есть
@@ -156,8 +197,8 @@ def check_answer(
         # Парсим JSON
         check_result = json.loads(json_text)
         
-        # Добавляем правильный ответ к результату
-        check_result["correct_answer"] = exercise["correct_answer"]
+        # Добавляем правильный ответ или модельный ответ для открытых вопросов
+        check_result["correct_answer"] = exercise.get("correct_answer", exercise.get("model_answer", ""))
         
         return check_result
     
@@ -169,7 +210,7 @@ def check_answer(
         return {
             "is_correct": False,
             "feedback": "Не удалось автоматически проверить ответ. Пожалуйста, сравните с правильным ответом.",
-            "correct_answer": exercise["correct_answer"],
+            "correct_answer": exercise.get("correct_answer", exercise.get("model_answer", "")),
             "error": str(e)
         }
     
@@ -180,7 +221,7 @@ def check_answer(
         return {
             "is_correct": False,
             "feedback": "Произошла ошибка при проверке ответа. Пожалуйста, попробуйте еще раз.",
-            "correct_answer": exercise["correct_answer"],
+            "correct_answer": exercise.get("correct_answer", exercise.get("model_answer", "")),
             "error": str(e)
         }
 

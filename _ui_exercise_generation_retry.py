@@ -14,6 +14,13 @@ def generate_exercises(section_text, difficulty, section_title, stage, previous_
                 previous_questions,
                 settings_path
             )
+            # Нормализация правильного ответа: если строка содержит запятые, преобразуем в список
+            if stage == 1:
+                for ex in exercises:
+                    ca = ex.get('correct_answer')
+                    if isinstance(ca, str) and ',' in ca:
+                        items = [item.strip() for item in ca.split(',') if item.strip()]
+                        ex['correct_answer'] = items
             # Валидация для тестов с несколькими правильными ответами
             if stage == 1:
                 all_valid = True
