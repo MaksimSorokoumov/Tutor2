@@ -294,6 +294,7 @@ class MainWindow(QMainWindow):
             res = evaluate_section(self.progress, sid)
             self.progress['sections'][sid]['evaluation'] = res
             save_progress(os.path.join(self.current_course_dir, "progress.json"), self.progress)
+            QMessageBox.information(self, "Результаты оценки раздела", f"Оценка: {res['score']}\nКомментарий: {res['comment']}")
         except Exception as e:
             log_error(e)
         

@@ -39,9 +39,12 @@ def evaluate_section(
     text = get_completion_text(resp) or ''
     # Убираем обёртку ```json если есть
     def _clean_json(t):
-        if t.startswith('```'):
-            t = t.strip('`')
-        return t
+        # Извлекаем JSON-объект из текста (убираем возможные code fencing)
+        start = t.find('{')
+        end = t.rfind('}')
+        if start != -1 and end != -1:
+            return t[start:end+1]
+        return t.strip()
     text = _clean_json(text)
     data = None
     # Попытка парсинга с регенерацией при неудаче
