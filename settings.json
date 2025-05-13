@@ -6,6 +6,8 @@
   "max_tokens": 8000,
   "temperature": 0.5,
   "recent_courses": [
+    "C:/Users/maxim/Desktop/Новая папка\\БЯМ",
+    "G:/Tutor2/Логика - для военно юрфака",
     "D:/Курс_логика\\Логика - для военно юрфака"
   ]
 }

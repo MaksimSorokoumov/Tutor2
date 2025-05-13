@@ -287,6 +287,16 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Предупреждение", "Необходимо открыть курс для доступа к разделам.")
             return
         
+        # Автоматическая оценка текущего раздела перед переходом к следующему
+        try:
+            from _20_evaluate_section import evaluate_section
+            sid = str(self.current_section['id'])
+            res = evaluate_section(self.progress, sid)
+            self.progress['sections'][sid]['evaluation'] = res
+            save_progress(os.path.join(self.current_course_dir, "progress.json"), self.progress)
+        except Exception as e:
+            log_error(e)
+        
         # Получаем все секции текущего курса
         sections = get_course_sections(self.current_course_dir)
         
