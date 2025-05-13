@@ -26,7 +26,7 @@ def evaluate_section(
         content += f"Этап: {ex['stage'] + 1}/3; Ответ пользователя: {ex['user_answer']}; Правильный: {ex['correct_answer']}; Результат: {'верно' if ex['is_correct'] else 'неверно'}\n\n"
     content += 'На основе этого дай оценку от 1 до 5 и краткий комментарий.'
     messages = [
-        {"role": "system", "content": "Ты - опытный преподаватель, оценивающий усвоение курса."},
+        {"role": "system", "content": "Ты - опытный преподаватель, оценивающий усвоение курса, отвечай строго в формате JSON {\"score\": <число 1-5>, \"comment\": \"<текст>\"} без дополнительного текста."},
         {"role": "user", "content": content}
     ]
     resp = send_chat_completion(
@@ -37,15 +37,30 @@ def evaluate_section(
         temperature=0.3
     )
     text = get_completion_text(resp) or ''
-    # Выделяем JSON из ответа
-    try:
-        # Если ответ в ```json, убираем метки
-        if text.startswith('```'):
-            text = text.strip('`')
-        data = json.loads(text)
-        score = int(data.get('score', 0))
-        comment = data.get('comment', '')
-    except Exception:
-        # В случае ошибки возвращаем нулевую оценку
-        score, comment = 0, 'Не удалось получить оценку'
+    # Убираем обёртку ```json если есть
+    def _clean_json(t):
+        if t.startswith('```'):
+            t = t.strip('`')
+        return t
+    text = _clean_json(text)
+    data = None
+    # Попытка парсинга с регенерацией при неудаче
+    for attempt in range(2):  # первая попытка и одна регенерация
+        try:
+            data = json.loads(text)
+            break
+        except Exception:
+            # Повторный запрос для получения корректного JSON
+            resp = send_chat_completion(
+                api_endpoint=settings['api_endpoint'],
+                model=settings['model'],
+                messages=messages,
+                max_tokens=200,
+                temperature=0.3
+            )
+            text = _clean_json(get_completion_text(resp) or '')
+    if not data:
+        return {'score': 0, 'comment': 'Не удалось получить оценку'}
+    score = int(data.get('score', 0))
+    comment = data.get('comment', '')
     return {'score': score, 'comment': comment} 
