@@ -346,7 +346,15 @@ class MainWindow(QMainWindow):
         """Показывает диалог настроек."""
         dialog = SettingsDialog(self)
         if dialog.exec_() == QDialog.Accepted:
-            self.settings = dialog.get_settings()
+            # Получаем новые настройки
+            new_settings = dialog.get_settings()
+            
+            # Проверяем, что recent_courses сохранены
+            if "recent_courses" not in new_settings and "recent_courses" in self.settings:
+                new_settings["recent_courses"] = self.settings["recent_courses"]
+                
+            # Обновляем настройки
+            self.settings = new_settings
             from _5_save_settings import save_settings
             save_settings("settings.json", self.settings)
             QMessageBox.information(self, "Информация", "Настройки сохранены")

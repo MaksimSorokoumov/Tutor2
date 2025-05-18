@@ -32,7 +32,7 @@ def format_sections(
             "1. Согласованность оформления во всех разделах.\n"
             "2. Читаемость: чёткие абзацы, списки, выделение ключевых идей.\n"
             "3. Структура: при необходимости используй списки и подзаголовки.\n"
-            "4. Умеренность: выделяй только самые важные элементы, без перегрузки.\n"
+            "4. Умеренность: выделяй только важные элементы, без перегрузки.\n"
             "5. Выделяй ключевые концепции и определения, сохраняя исходный текст без добавления новой информации.\n"
             "6. Сохраняй содержание, орфографию и пунктуацию оригинального текста, не изменяй авторскую стилистику.\n"
             "7. Не добавляй в текст никаких комментариев, пояснений, объяснений, не относящихся к тексту.\n"
@@ -56,12 +56,22 @@ def format_sections(
 
         # Запрос к LLM
         try:
+            # Подготовка параметров в зависимости от провайдера LLM
+            if settings.get("llm_provider") == "openrouter":
+                api_endpoint = "https://openrouter.ai/api/v1"
+                model = settings.get("selected_openrouter_model")
+                api_key = settings.get("openrouter_api_key")
+            else:
+                api_endpoint = settings['api_endpoint']
+                model = settings['model']
+                api_key = None
             resp = send_chat_completion(
-                api_endpoint=settings['api_endpoint'],
-                model=settings['model'],
+                api_endpoint=api_endpoint,
+                model=model,
                 messages=[system_message, user_message],
                 max_tokens=settings['max_tokens'],
-                temperature=settings.get('temperature', 0.5)
+                temperature=settings.get('temperature', 0.5),
+                api_key=api_key
             )
             formatted = get_completion_text(resp) or ''
         except Exception as e:

@@ -65,10 +65,20 @@ def check_answer(
                 )
                 user_message = {"role": "user", "content": user_content}
                 settings = load_settings(settings_path)
+                # Подготовка параметров в зависимости от провайдера LLM
+                if settings.get("llm_provider") == "openrouter":
+                    api_endpoint = "https://openrouter.ai/api/v1"
+                    model = settings.get("selected_openrouter_model")
+                    api_key = settings.get("openrouter_api_key")
+                else:
+                    api_endpoint = settings["api_endpoint"]
+                    model = settings["model"]
+                    api_key = None
                 resp = send_chat_completion(
-                    api_endpoint=settings["api_endpoint"], model=settings["model"],
+                    api_endpoint=api_endpoint, model=model,
                     messages=[system_message, user_message],
-                    max_tokens=settings["max_tokens"], temperature=0.3
+                    max_tokens=settings["max_tokens"], temperature=0.3,
+                    api_key=api_key
                 )
                 text = get_completion_text(resp)
                 json_text = text.strip()
@@ -170,13 +180,23 @@ def check_answer(
     }
     
     try:
+        # Подготовка параметров в зависимости от провайдера LLM
+        if settings.get("llm_provider") == "openrouter":
+            api_endpoint = "https://openrouter.ai/api/v1"
+            model = settings.get("selected_openrouter_model")
+            api_key = settings.get("openrouter_api_key")
+        else:
+            api_endpoint = settings["api_endpoint"]
+            model = settings["model"]
+            api_key = None
         # Отправляем запрос к API
         response = send_chat_completion(
-            api_endpoint=settings["api_endpoint"],
-            model=settings["model"],
+            api_endpoint=api_endpoint,
+            model=model,
             messages=[system_message, user_message],
             max_tokens=settings["max_tokens"],
-            temperature=0.2  # Меньшая температура для более точных ответов
+            temperature=0.3,
+            api_key=api_key
         )
         
         # Извлекаем текст из ответа
@@ -309,13 +329,23 @@ def get_llm_explanation_for_wrong_answer(
     }
     
     try:
+        # Подготовка параметров в зависимости от провайдера LLM
+        if settings.get("llm_provider") == "openrouter":
+            api_endpoint = "https://openrouter.ai/api/v1"
+            model = settings.get("selected_openrouter_model")
+            api_key = settings.get("openrouter_api_key")
+        else:
+            api_endpoint = settings["api_endpoint"]
+            model = settings["model"]
+            api_key = None
         # Отправляем запрос к API
         response = send_chat_completion(
-            api_endpoint=settings["api_endpoint"],
-            model=settings["model"],
+            api_endpoint=api_endpoint,
+            model=model,
             messages=[system_message, user_message],
             max_tokens=settings["max_tokens"],
-            temperature=0.3
+            temperature=0.3,
+            api_key=api_key
         )
         
         # Извлекаем текст из ответа

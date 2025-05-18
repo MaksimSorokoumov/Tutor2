@@ -1,7 +1,7 @@
 """Модуль для загрузки настроек из JSON-файла."""
 import json
 import os
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 def load_settings(settings_path: str) -> Dict[str, Any]:
     """Загружает настройки из JSON-файла.
@@ -19,8 +19,15 @@ def load_settings(settings_path: str) -> Dict[str, Any]:
     if not os.path.exists(settings_path):
         # Если файл не существует, возвращаем настройки по умолчанию
         default_settings = {
+            "llm_provider": "local",  # local или openrouter
             "api_endpoint": "http://localhost:1234/v1",
             "model": "local",
+            "openrouter_api_key": "",
+            "openrouter_models": [
+                "meta-llama/llama-3-8b-instruct",
+                "mistralai/mistral-7b-instruct-v0.2"
+            ],
+            "selected_openrouter_model": "meta-llama/llama-3-8b-instruct",
             "max_tokens": 8000,
             "temperature": 0.5,
             "detail_level": "средний",

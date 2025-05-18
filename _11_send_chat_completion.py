@@ -9,7 +9,8 @@ def send_chat_completion(
     model: str,
     messages: List[Dict[str, str]],
     max_tokens: int,
-    temperature: float
+    temperature: float,
+    api_key: Optional[str] = None
 ) -> Dict[str, Any]:
     """Отправляет сообщения модели через API.
     
@@ -19,6 +20,7 @@ def send_chat_completion(
         messages: Список сообщений в формате [{role: "system|user|assistant", content: "текст"}]
         max_tokens: Максимальное количество токенов в ответе
         temperature: Температура (креативность) от 0.0 до 1.0
+        api_key: Ключ API для OpenRouter (Bearer), если требуется
         
     Returns:
         Словарь с ответом от API
@@ -42,6 +44,10 @@ def send_chat_completion(
     headers = {
         "Content-Type": "application/json"
     }
+    
+    # Добавляем Authorization для OpenRouter
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
     
     try:
         # Отправляем POST-запрос

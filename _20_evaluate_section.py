@@ -29,12 +29,22 @@ def evaluate_section(
         {"role": "system", "content": "Ты - опытный преподаватель, оценивающий усвоение курса, отвечай строго в формате JSON {\"score\": <число 1-5>, \"comment\": \"<текст>\"} без дополнительного текста."},
         {"role": "user", "content": content}
     ]
+    # Подготовка параметров в зависимости от провайдера LLM
+    if settings.get("llm_provider") == "openrouter":
+        api_endpoint = "https://openrouter.ai/api/v1"
+        model = settings.get("selected_openrouter_model")
+        api_key = settings.get("openrouter_api_key")
+    else:
+        api_endpoint = settings['api_endpoint']
+        model = settings['model']
+        api_key = None
     resp = send_chat_completion(
-        api_endpoint=settings['api_endpoint'],
-        model=settings['model'],
+        api_endpoint=api_endpoint,
+        model=model,
         messages=messages,
-        max_tokens=200,
-        temperature=0.3
+        max_tokens=settings.get("max_tokens", 200),
+        temperature=0.3,
+        api_key=api_key
     )
     text = get_completion_text(resp) or ''
     # Убираем обёртку ```json если есть
@@ -55,11 +65,12 @@ def evaluate_section(
         except Exception:
             # Повторный запрос для получения корректного JSON
             resp = send_chat_completion(
-                api_endpoint=settings['api_endpoint'],
-                model=settings['model'],
+                api_endpoint=api_endpoint,
+                model=model,
                 messages=messages,
-                max_tokens=200,
-                temperature=0.3
+                max_tokens=settings.get("max_tokens", 200),
+                temperature=0.3,
+                api_key=api_key
             )
             text = _clean_json(get_completion_text(resp) or '')
     if not data:

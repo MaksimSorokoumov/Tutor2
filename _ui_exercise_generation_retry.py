@@ -31,6 +31,11 @@ def generate_exercises(section_text, difficulty, section_title, stage, previous_
                         break
                 if not all_valid:
                     raise ValueError(f"Некорректное количество правильных ответов на попытке {attempt}")
+            # Гарантируем наличие поля options для тестовых упражнений
+            if stage in (0, 1):
+                for ex in exercises:
+                    if 'options' not in ex or not isinstance(ex['options'], list):
+                        ex['options'] = []
             return exercises
         except Exception as e:
             log_error(e)

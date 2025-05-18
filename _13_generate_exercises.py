@@ -150,13 +150,23 @@ def generate_exercises(
     user_message = {"role": "user", "content": user_message_content}
     
     try:
+        # Подготовка параметров в зависимости от провайдера LLM
+        if settings.get("llm_provider") == "openrouter":
+            api_endpoint = "https://openrouter.ai/api/v1"
+            model = settings.get("selected_openrouter_model")
+            api_key = settings.get("openrouter_api_key")
+        else:
+            api_endpoint = settings["api_endpoint"]
+            model = settings["model"]
+            api_key = None
         # Отправляем запрос к API
         response = send_chat_completion(
-            api_endpoint=settings["api_endpoint"],
-            model=settings["model"],
+            api_endpoint=api_endpoint,
+            model=model,
             messages=[system_message, user_message],
             max_tokens=settings["max_tokens"],
-            temperature=settings["temperature"]
+            temperature=settings["temperature"],
+            api_key=api_key
         )
         
         # Извлекаем текст из ответа
