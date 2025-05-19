@@ -2,13 +2,15 @@
 import requests
 import json
 from typing import List, Dict, Any, Optional
+import re # Добавляем импорт re
 
 def send_chat_completion(
     api_endpoint: str,
     model: str,
     messages: List[Dict[str, str]],
     max_tokens: int,
-    temperature: float
+    temperature: float,
+    api_key: Optional[str] = None
 ) -> Dict[str, Any]:
     """Отправляет сообщения модели через API.
     
@@ -18,6 +20,7 @@ def send_chat_completion(
         messages: Список сообщений в формате [{role: "system|user|assistant", content: "текст"}]
         max_tokens: Максимальное количество токенов в ответе
         temperature: Температура (креативность) от 0.0 до 1.0
+        api_key: Ключ API для OpenRouter (Bearer), если требуется
         
     Returns:
         Словарь с ответом от API
@@ -42,13 +45,17 @@ def send_chat_completion(
         "Content-Type": "application/json"
     }
     
+    # Добавляем Authorization для OpenRouter
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    
     try:
         # Отправляем POST-запрос
         response = requests.post(
             completion_url, 
             data=json.dumps(payload), 
             headers=headers,
-            timeout=120  # Увеличенный таймаут (2 минуты)
+            timeout=240  # Увеличенный таймаут (4 минуты)
         )
         response.raise_for_status()  # Вызовет исключение при ошибках HTTP
         
@@ -73,6 +80,7 @@ def get_completion_text(response: Dict[str, Any]) -> Optional[str]:
         Текст ответа или None, если структура ответа некорректна
     """
     try:
+        text_content: Optional[str] = None
         # Проверяем ключи в соответствии с форматом OpenAI API
         if 'choices' in response and len(response['choices']) > 0:
             choice = response['choices'][0]
@@ -80,10 +88,15 @@ def get_completion_text(response: Dict[str, Any]) -> Optional[str]:
             # Формат может различаться в зависимости от API
             if 'message' in choice and 'content' in choice['message']:
                 # Стандартный формат OpenAI
-                return choice['message']['content']
+                text_content = choice['message']['content']
             elif 'text' in choice:
                 # Альтернативный формат
-                return choice['text']
+                text_content = choice['text']
+        
+        if text_content:
+            # Удаляем теги <think>...</think> и их содержимое
+            text_content = re.sub(r'<think>.*?</think>', '', text_content, flags=re.DOTALL).strip()
+            return text_content
         
         print(f"Неизвестный формат ответа API: {response}")
         return None

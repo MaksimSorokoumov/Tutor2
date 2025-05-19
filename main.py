@@ -15,73 +15,21 @@ from _14_check_answer import check_answer
 from _15_log_error import log_error, log_info
 from _16_create_course_structure import create_course_structure
 from _17_open_course import open_course
-from _18_select_section import select_section
+from _18_select_section import select_section, get_course_sections
 from _19_load_demo_text import load_welcome_text
 from _8_load_progress import load_progress
 from _9_save_progress import save_progress
 
-class SettingsDialog(QDialog):
-    """Диалог настроек приложения."""
-    
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Настройки")
-        self.setMinimumWidth(400)
-        
-        # Загружаем текущие настройки
-        self.settings = load_settings("settings.json")
-        
-        # Создаем виджеты
-        self.detail_level_combo = QComboBox()
-        self.detail_level_combo.addItems(["базовый", "средний", "подробный"])
-        self.detail_level_combo.setCurrentText(self.settings.get("detail_level", "средний"))
-        
-        self.difficulty_combo = QComboBox()
-        self.difficulty_combo.addItems(["начальный", "средний", "продвинутый"])
-        self.difficulty_combo.setCurrentText(self.settings.get("difficulty", "средний"))
-        
-        self.model_edit = QLineEdit(self.settings.get("model", "локальная"))
-        
-        self.api_endpoint_edit = QLineEdit(self.settings.get("api_endpoint", "http://localhost:1234/v1"))
-        
-        self.max_tokens_edit = QLineEdit(str(self.settings.get("max_tokens", 8000)))
-        
-        # Кнопки
-        self.cancel_btn = QPushButton("Отмена")
-        self.save_btn = QPushButton("Сохранить")
-        
-        # Подключаем сигналы
-        self.cancel_btn.clicked.connect(self.reject)
-        self.save_btn.clicked.connect(self.accept)
-        
-        # Создаем макет
-        layout = QFormLayout()
-        layout.addRow("Уровень детализации объяснений:", self.detail_level_combo)
-        layout.addRow("Сложность упражнений:", self.difficulty_combo)
-        layout.addRow("Модель:", self.model_edit)
-        layout.addRow("API Endpoint:", self.api_endpoint_edit)
-        layout.addRow("Максимальное количество токенов:", self.max_tokens_edit)
-        
-        button_layout = QHBoxLayout()
-        button_layout.addWidget(self.cancel_btn)
-        button_layout.addWidget(self.save_btn)
-        
-        main_layout = QVBoxLayout()
-        main_layout.addLayout(layout)
-        main_layout.addLayout(button_layout)
-        
-        self.setLayout(main_layout)
-    
-    def get_settings(self):
-        """Возвращает настройки из диалога."""
-        return {
-            "detail_level": self.detail_level_combo.currentText(),
-            "difficulty": self.difficulty_combo.currentText(),
-            "model": self.model_edit.text(),
-            "api_endpoint": self.api_endpoint_edit.text(),
-            "max_tokens": int(self.max_tokens_edit.text()),
-            "temperature": 0.5  # Фиксированное значение для простоты
-        }
+# Импортируем UI модули
+from _ui_settings_dialog import SettingsDialog
+from _ui_text_processing import load_demo_text, open_book
+from _ui_explanation_generation import (generate_explanation, regenerate_explanation, 
+                                          send_feedback)
+from _ui_exercise_generation import (generate_exercise, check_answer, update_stage_text,
+                                       next_stage)
+from _ui_course_management import (create_course_structure, open_course, display_section,
+                                     create_new_course)
+from _ui_main_window import update_courses_menu, open_course_by_path
 
 class MainWindow(QMainWindow):
     """Главное окно приложения Tutor."""
@@ -103,7 +51,9 @@ class MainWindow(QMainWindow):
         self.current_course_dir = ""
         self.current_course_structure = []
         self.current_section = None
-        self.progress = {}
+        self.progress = {"sections": {}}  # Инициализируем структуру progress с пустым разделом sections
+        self.current_stage = 0  # Этап обучения (0, 1 или 2)
+        self.previous_questions = []  # Список предыдущих вопросов для избежания повторений
         
         # Создаем центральный виджет и макет
         central_widget = QWidget()
@@ -111,6 +61,7 @@ class MainWindow(QMainWindow):
         
         # Главный макет - горизонтальный для трех панелей
         main_layout = QHBoxLayout()
+        main_layout.setSpacing(10)  # Добавляем отступ между панелями
         
         # Панель 1: Исходный текст
         text_panel = QWidget()
@@ -118,15 +69,19 @@ class MainWindow(QMainWindow):
         
         self.text_label = QLabel("Исходный текст")
         self.text_label.setFont(QFont("Arial", 12, QFont.Bold))
+        self.text_label.setWordWrap(True)
+        self.text_label.setMinimumHeight(40)
         
         self.text_edit = QTextEdit()
         self.text_edit.setReadOnly(True)
         
         text_buttons_layout = QHBoxLayout()
         self.copy_text_btn = QPushButton("Копировать")
+        self.toc_btn = QPushButton("Оглавление")
         self.explain_btn = QPushButton("Объяснить")
         
         text_buttons_layout.addWidget(self.copy_text_btn)
+        text_buttons_layout.addWidget(self.toc_btn)
         text_buttons_layout.addWidget(self.explain_btn)
         
         text_layout.addWidget(self.text_label)
@@ -134,6 +89,7 @@ class MainWindow(QMainWindow):
         text_layout.addLayout(text_buttons_layout)
         
         text_panel.setLayout(text_layout)
+        text_panel.setMinimumWidth(300)
         
         # Панель 2: Объяснение
         explanation_panel = QWidget()
@@ -141,6 +97,8 @@ class MainWindow(QMainWindow):
         
         self.explanation_label = QLabel("Объяснение")
         self.explanation_label.setFont(QFont("Arial", 12, QFont.Bold))
+        self.explanation_label.setWordWrap(True)
+        self.explanation_label.setMinimumHeight(40)
         
         self.explanation_edit = QTextEdit()
         self.explanation_edit.setReadOnly(True)
@@ -166,6 +124,7 @@ class MainWindow(QMainWindow):
         explanation_layout.addLayout(explanation_feedback_layout)
         
         explanation_panel.setLayout(explanation_layout)
+        explanation_panel.setMinimumWidth(300)
         
         # Панель 3: Упражнения
         exercise_panel = QWidget()
@@ -173,6 +132,8 @@ class MainWindow(QMainWindow):
         
         self.exercise_label = QLabel("Упражнение")
         self.exercise_label.setFont(QFont("Arial", 12, QFont.Bold))
+        self.exercise_label.setWordWrap(True)
+        self.exercise_label.setMinimumHeight(40)
         
         self.exercise_edit = QTextEdit()
         self.exercise_edit.setReadOnly(True)
@@ -183,14 +144,25 @@ class MainWindow(QMainWindow):
         exercise_buttons_layout = QHBoxLayout()
         self.check_btn = QPushButton("Проверить ответ")
         self.next_exercise_btn = QPushButton("Новое упражнение")
+        self.next_stage_btn = QPushButton("Следующий этап")
+        # Кнопка для обновления оценки раздела
+        self.update_results_btn = QPushButton("Обновить результаты")
         
         exercise_buttons_layout.addWidget(self.check_btn)
         exercise_buttons_layout.addWidget(self.next_exercise_btn)
+        exercise_buttons_layout.addWidget(self.next_stage_btn)
+        exercise_buttons_layout.addWidget(self.update_results_btn)
         
         self.result_label = QLabel("Результат проверки")
         self.result_edit = QTextEdit()
         self.result_edit.setReadOnly(True)
         
+        # Добавляем индикатор прогресса с этапом обучения
+        self.stage_label = QLabel("Этап обучения: тесты с одним правильным ответом (1/3)")
+        self.stage_label.setFont(QFont("Arial", 10, QFont.Bold))
+        self.stage_label.setAlignment(Qt.AlignCenter)
+        
+        exercise_layout.addWidget(self.stage_label)
         exercise_layout.addWidget(self.exercise_label)
         exercise_layout.addWidget(self.exercise_edit)
         exercise_layout.addWidget(QLabel("Ваш ответ:"))
@@ -200,11 +172,12 @@ class MainWindow(QMainWindow):
         exercise_layout.addWidget(self.result_edit)
         
         exercise_panel.setLayout(exercise_layout)
+        exercise_panel.setMinimumWidth(300)
         
-        # Добавляем панели в главный макет
-        main_layout.addWidget(text_panel, 1)
-        main_layout.addWidget(explanation_panel, 1)
-        main_layout.addWidget(exercise_panel, 1)
+        # Добавляем панели в главный макет с минимальной шириной и соотношением растяжения
+        main_layout.addWidget(text_panel, 3)
+        main_layout.addWidget(explanation_panel, 3)
+        main_layout.addWidget(exercise_panel, 4)
         
         central_widget.setLayout(main_layout)
         
@@ -223,12 +196,15 @@ class MainWindow(QMainWindow):
         
         # Меню "Файл"
         file_menu = menubar.addMenu("Файл")
+        file_menu.setObjectName("file_menu")  # Устанавливаем objectName для поиска меню
         
         create_new_course_action = file_menu.addAction("Создать новый курс...")
         create_new_course_action.triggered.connect(self.create_new_course)
         
         open_course_action = file_menu.addAction("Открыть курс...")
         open_course_action.triggered.connect(self.open_course)
+        
+        # Подменю доступных курсов будет добавлено в update_courses_menu
         
         file_menu.addSeparator()
         
@@ -241,15 +217,22 @@ class MainWindow(QMainWindow):
         settings_action = tools_menu.addAction("Настройки...")
         settings_action.triggered.connect(self.show_settings)
         
+        format_action = tools_menu.addAction("Форматировать материал")
+        format_action.triggered.connect(self.format_material)
+        
         # Меню "Справка"
         help_menu = menubar.addMenu("Справка")
         
         about_action = help_menu.addAction("О программе")
         about_action.triggered.connect(self.show_about)
+        
+        # Обновляем меню курсов
+        update_courses_menu(self)
     
     def connect_signals(self):
         """Привязывает обработчики событий к виджетам."""
         self.copy_text_btn.clicked.connect(self.copy_text)
+        self.toc_btn.clicked.connect(self.open_toc)
         self.explain_btn.clicked.connect(self.generate_explanation)
         
         self.copy_explanation_btn.clicked.connect(self.copy_explanation)
@@ -258,184 +241,96 @@ class MainWindow(QMainWindow):
         
         self.check_btn.clicked.connect(self.check_answer)
         self.next_exercise_btn.clicked.connect(self.generate_exercise)
+        self.next_stage_btn.clicked.connect(self.next_stage)
+        self.update_results_btn.clicked.connect(self.update_evaluation)
     
     def load_demo_text(self):
         """Загружает приветственный текст и справку."""
-        welcome_text = load_welcome_text()
-        self.text_edit.setText(welcome_text)
-        self.current_text = welcome_text
+        load_demo_text(self)
     
     def open_book(self):
         """Открывает диалог выбора книги."""
-        file_path, _ = QFileDialog.getOpenFileName(
-            self, "Открыть книгу", "", "Текстовые файлы (*.txt);;Word документы (*.docx);;Все файлы (*.*)"
-        )
-        
-        if file_path:
-            try:
-                from _1_load_book import load_book
-                text = load_book(file_path)
-                self.text_edit.setText(text)
-                self.current_text = text
-                self.explanation_edit.clear()
-                self.exercise_edit.clear()
-                self.answer_edit.clear()
-                self.result_edit.clear()
-                
-                QMessageBox.information(self, "Информация", f"Книга успешно загружена: {file_path}")
-            except Exception as e:
-                log_error(e)
-                QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить книгу: {str(e)}")
+        open_book(self)
     
     def generate_explanation(self):
         """Генерирует объяснение для текста."""
-        if not self.current_text:
-            QMessageBox.warning(self, "Предупреждение", "Нет текста для объяснения")
-            return
-        
-        try:
-            self.explanation_edit.setText("Генерация объяснения...")
-            QApplication.processEvents()  # Обновляем интерфейс
-            
-            explanation = generate_explanation(
-                self.current_text,
-                self.settings.get("detail_level", "средний")
-            )
-            
-            self.explanation_edit.setText(explanation)
-            self.current_explanation = explanation
-            
-            # Генерируем упражнение после объяснения
-            self.generate_exercise()
-            
-        except Exception as e:
-            log_error(e)
-            self.explanation_edit.setText(f"Ошибка при генерации объяснения: {str(e)}")
+        generate_explanation(self)
     
     def regenerate_explanation(self):
         """Генерирует объяснение заново."""
-        self.generate_explanation()
+        regenerate_explanation(self)
     
     def send_feedback(self):
         """Отправляет отзыв для уточнения объяснения."""
-        feedback = self.feedback_edit.text()
-        
-        if not feedback:
-            QMessageBox.warning(self, "Предупреждение", "Введите ваш вопрос или отзыв")
-            return
-        
-        if not self.current_text:
-            QMessageBox.warning(self, "Предупреждение", "Нет текста для объяснения")
-            return
-        
-        try:
-            self.explanation_edit.setText("Генерация уточненного объяснения...")
-            QApplication.processEvents()  # Обновляем интерфейс
-            
-            explanation = generate_explanation(
-                self.current_text,
-                self.settings.get("detail_level", "средний"),
-                feedback
-            )
-            
-            self.explanation_edit.setText(explanation)
-            self.current_explanation = explanation
-            self.feedback_edit.clear()
-            
-        except Exception as e:
-            log_error(e)
-            self.explanation_edit.setText(f"Ошибка при генерации уточненного объяснения: {str(e)}")
+        send_feedback(self)
     
     def generate_exercise(self):
         """Генерирует упражнение."""
-        if not self.current_text:
-            QMessageBox.warning(self, "Предупреждение", "Нет текста для генерации упражнения")
-            return
-        
-        try:
-            self.exercise_edit.setText("Генерация упражнения...")
-            QApplication.processEvents()  # Обновляем интерфейс
-            
-            # Генерируем упражнения и фильтруем уже выполненные
-            new_exs = generate_exercises(
-                self.current_text,
-                self.settings.get("difficulty", "средний")
-            )
-            if not new_exs:
-                raise ValueError("Не удалось сгенерировать упражнения")
-            if self.current_course_dir and self.current_section:
-                sid = str(self.current_section['id'])
-                answered = self.progress['sections'][sid]['answered']
-                new_exs = [ex for ex in new_exs if ex['question'] not in answered]
-                if not new_exs:
-                    QMessageBox.information(self, "Информация", "Все упражнения для этого раздела выполнены")
-                    self.exercise_edit.clear()
-                    return
-            self.current_exercises = new_exs
-            exercise = new_exs[0]
-            
-            # Форматируем упражнение для отображения
-            exercise_text = f"{exercise['question']}\n\n"
-            
-            if 'options' in exercise and exercise['options']:
-                exercise_text += "Варианты ответов:\n"
-                for i, option in enumerate(exercise['options'], 1):
-                    exercise_text += f"{i}. {option}\n"
-            
-            self.exercise_edit.setText(exercise_text)
-            self.answer_edit.clear()
-            self.result_edit.clear()
-            
-        except Exception as e:
-            log_error(e)
-            self.exercise_edit.setText(f"Ошибка при генерации упражнения: {str(e)}")
+        generate_exercise(self)
+    
+    def update_stage_text(self):
+        """Обновляет текст с информацией о текущем этапе обучения."""
+        update_stage_text(self)
+    
+    def next_stage(self):
+        """Переход к следующему этапу обучения."""
+        next_stage(self)
     
     def check_answer(self):
         """Проверяет ответ пользователя."""
-        if not self.current_exercises:
-            QMessageBox.warning(self, "Предупреждение", "Нет активного упражнения")
+        check_answer(self)
+    
+    def open_next_section(self):
+        """Открывает следующий раздел учебника."""
+        # Проверяем, открыт ли курс и есть ли текущий раздел
+        if not self.current_course_dir or not self.current_section:
+            QMessageBox.warning(self, "Предупреждение", "Необходимо открыть курс для доступа к разделам.")
             return
         
-        user_answer = self.answer_edit.toPlainText().strip()
-        
-        if not user_answer:
-            QMessageBox.warning(self, "Предупреждение", "Введите ваш ответ")
-            return
-        
+        # Автоматическая оценка текущего раздела перед переходом к следующему
         try:
-            self.result_edit.setText("Проверка ответа...")
-            QApplication.processEvents()  # Обновляем интерфейс
-            
-            exercise = self.current_exercises[0]  # Берем первое упражнение
-            result = check_answer(exercise, user_answer)
-            
-            # Обновляем историю в progress при правильном ответе
-            if self.current_course_dir and result.get("is_correct", False):
-                sid = str(self.current_section['id'])
-                qtext = exercise['question']
-                sp = self.progress['sections'][sid]
-                if qtext not in sp['answered']:
-                    sp['answered'].append(qtext)
-                    sp['exercises_completed'] += 1
-                    save_progress(os.path.join(self.current_course_dir, "progress.json"), self.progress)
-            
-            # Форматируем результат
-            result_text = ""
-            if result.get("is_correct", False):
-                result_text += "✓ Правильно!\n\n"
-            else:
-                result_text += "✗ Неправильно.\n\n"
-            
-            result_text += f"Отзыв: {result.get('feedback', '')}\n\n"
-            
-            if not result.get("is_correct", False):
-                result_text += f"Правильный ответ: {result.get('correct_answer', '')}"
-            
-            self.result_edit.setText(result_text)
-            
+            from _20_evaluate_section import evaluate_section
+            sid = str(self.current_section['id'])
+            res = evaluate_section(self.progress, sid)
+            self.progress['sections'][sid]['evaluation'] = res
+            save_progress(os.path.join(self.current_course_dir, "progress.json"), self.progress)
+            QMessageBox.information(self, "Результаты оценки раздела", f"Оценка: {res['score']}\nКомментарий: {res['comment']}")
         except Exception as e:
             log_error(e)
-            self.result_edit.setText(f"Ошибка при проверке ответа: {str(e)}")
+        
+        # Получаем все секции текущего курса
+        sections = get_course_sections(self.current_course_dir)
+        
+        # Находим индекс текущей секции
+        current_id = self.current_section['id']
+        current_index = -1
+        
+        for i, section in enumerate(sections):
+            if section['id'] == current_id:
+                current_index = i
+                break
+        
+        # Проверяем, есть ли следующая секция
+        if current_index >= 0 and current_index < len(sections) - 1:
+            # Получаем следующую секцию
+            next_section = sections[current_index + 1]
+            
+            # Отображаем следующую секцию
+            self.display_section(next_section)
+            
+            # Сбрасываем состояние кнопки "Следующий этап"
+            self.next_stage_btn.setText("Следующий этап")
+            try:
+                self.next_stage_btn.clicked.disconnect()
+            except:
+                pass
+            self.next_stage_btn.clicked.connect(self.next_stage)
+            
+            # Сбрасываем current_stage на первый этап для нового раздела
+            self.current_stage = 0
+            self.update_stage_text()
+        else:
+            QMessageBox.information(self, "Информация", "Это последний раздел учебника. Обучение завершено!")
     
     def copy_text(self):
         """Копирует текст в буфер обмена."""
@@ -451,7 +346,15 @@ class MainWindow(QMainWindow):
         """Показывает диалог настроек."""
         dialog = SettingsDialog(self)
         if dialog.exec_() == QDialog.Accepted:
-            self.settings = dialog.get_settings()
+            # Получаем новые настройки
+            new_settings = dialog.get_settings()
+            
+            # Проверяем, что recent_courses сохранены
+            if "recent_courses" not in new_settings and "recent_courses" in self.settings:
+                new_settings["recent_courses"] = self.settings["recent_courses"]
+                
+            # Обновляем настройки
+            self.settings = new_settings
             from _5_save_settings import save_settings
             save_settings("settings.json", self.settings)
             QMessageBox.information(self, "Информация", "Настройки сохранены")
@@ -466,125 +369,95 @@ class MainWindow(QMainWindow):
             "Приложение для интерактивного обучения с использованием нейросети для генерации объяснений и упражнений."
         )
     
+    def format_material(self):
+        """Форматирует текст разделов курса через LLM."""
+        if not self.current_course_dir:
+            QMessageBox.warning(self, "Предупреждение", "Откройте курс, чтобы форматировать материал.")
+            return
+        from _2_1_format_text import format_sections
+        from _6_load_course_structure import load_course_structure
+        structure_path = os.path.join(self.current_course_dir, "structure.json")
+        try:
+            format_sections(structure_path)
+            # Перезагрузить структуру
+            self.current_course_structure = load_course_structure(structure_path)
+            # Отобразить текущий раздел заново, если он существует
+            if self.current_section:
+                for sec in self.current_course_structure:
+                    if sec['id'] == self.current_section['id']:
+                        self.display_section(sec)
+                        break
+            QMessageBox.information(self, "Информация", "Материал разделов отформатирован и обновлён.")
+        except Exception as e:
+            log_error(e)
+            QMessageBox.critical(self, "Ошибка", f"Не удалось форматировать материал: {e}")
+    
     def create_course_structure(self):
         """Создает структуру курса на основе загруженной книгу."""
-        success, directory, structure = create_course_structure(self, self.current_text)
-        
-        if success and structure:
-            # Сохраняем структуру и загружаем прогресс
-            self.current_course_dir = directory
-            self.current_course_structure = structure
-            self.progress = load_progress(os.path.join(directory, "progress.json"))
-            self.current_section = None
-            
-            # Предлагаем открыть первый раздел
-            reply = QMessageBox.question(
-                self, 
-                "Открыть раздел", 
-                "Структура курса создана. Хотите открыть первый раздел?", 
-                QMessageBox.Yes | QMessageBox.No
-            )
-            
-            if reply == QMessageBox.Yes and len(structure) > 0:
-                self.display_section(structure[0])
+        create_course_structure(self)
     
     def open_course(self):
         """Открывает созданный курс."""
         success, directory, structure = open_course(self)
-        
-        if success and structure:
-            # Сохраняем структуру и загружаем прогресс
+        if success:
             self.current_course_dir = directory
             self.current_course_structure = structure
-            self.progress = load_progress(os.path.join(directory, "progress.json"))
-            self.current_section = None
             
-            # Показываем диалог выбора раздела
-            selected_section = select_section(self, structure)
-            
-            if selected_section:
-                self.display_section(selected_section)
+            # Отображаем первый раздел, если он есть
+            if structure and len(structure) > 0:
+                self.display_section(structure[0])
+                
+            # Обновляем меню курсов
+            update_courses_menu(self)
     
     def display_section(self, section):
         """Отображает содержимое раздела в интерфейсе."""
-        self.current_section = section
-        self.text_edit.setText(section['content'])
-        self.current_text = section['content']
-        self.explanation_edit.clear()
-        self.exercise_edit.clear()
-        self.answer_edit.clear()
-        self.result_edit.clear()
-        
-        # Обновляем заголовок окна
-        self.setWindowTitle(f"Tutor - {section['title']}")
-        
-        QMessageBox.information(self, "Информация", f"Открыт раздел: {section['title']}")
+        display_section(self, section)
 
     def create_new_course(self):
         """Создает новый курс в одно действие (открытие книги + создание структуры)."""
-        file_path, _ = QFileDialog.getOpenFileName(
-            self, "Открыть книгу для создания курса", "", 
-            "Текстовые файлы (*.txt);;Word документы (*.docx);;Все файлы (*.*)"
-        )
+        success = create_new_course(self)
+        if success:
+            # Обновляем меню курсов после создания нового курса
+            update_courses_menu(self)
+
+    def open_toc(self):
+        """Открывает оглавление курса для выбора раздела."""
+        # Проверяем, открыт ли курс
+        if not self.current_course_dir or not self.current_course_structure:
+            QMessageBox.warning(self, "Предупреждение", "Необходимо открыть курс для доступа к оглавлению.")
+            return
+            
+        # Показываем диалог выбора раздела
+        section = select_section(self, self.current_course_structure)
         
-        if not file_path:
-            return  # Пользователь отменил выбор книги
+        # Если пользователь выбрал раздел, отображаем его
+        if section:
+            self.display_section(section)
             
-        try:
-            # Загружаем книгу
-            from _1_load_book import load_book
-            text = load_book(file_path)
-            self.text_edit.setText(text)
-            self.current_text = text
-            self.explanation_edit.clear()
-            self.exercise_edit.clear()
-            self.answer_edit.clear()
-            self.result_edit.clear()
-            
-            # Запрашиваем директорию для сохранения курса
-            directory = QFileDialog.getExistingDirectory(
-                self, "Выберите директорию для сохранения курса"
-            )
-            
-            if not directory:
-                return  # Пользователь отменил выбор директории
-                
-            # Создаем структуру курса
-            from _3_initialize_course import initialize_course
-            from _6_load_course_structure import load_course_structure
-            
-            initialize_course(file_path, directory)
-            
-            # Загружаем созданную структуру
-            structure_path = os.path.join(directory, "structure.json")
-            structure = load_course_structure(structure_path)
-            
-            # Сохраняем структуру и загружаем прогресс
-            self.current_course_dir = directory
-            self.current_course_structure = structure
-            self.progress = load_progress(os.path.join(directory, "progress.json"))
-            self.current_section = None
-            
-            QMessageBox.information(
-                self, "Информация", 
-                f"Курс успешно создан на основе книги:\n{file_path}\n\nСтруктура сохранена в:\n{directory}"
-            )
-            
-            # Предлагаем открыть первый раздел
-            if structure:
-                reply = QMessageBox.question(
-                    self, 
-                    "Открыть раздел", 
-                    "Структура курса создана. Хотите открыть первый раздел?", 
-                    QMessageBox.Yes | QMessageBox.No
-                )
-                
-                if reply == QMessageBox.Yes:
-                    self.display_section(structure[0])
-                    
-        except Exception as e:
-            log_error(e)
-            QMessageBox.critical(self, "Ошибка", f"Не удалось создать курс: {str(e)}")
+            # Сбрасываем current_stage на первый этап для нового раздела
+            self.current_stage = 0
+            self.update_stage_text()
+
+    # Добавляем метод открытия курса по пути
+    def open_course_by_path(self, course_path):
+        """Открывает курс по указанному пути."""
+        open_course_by_path(self, course_path)
+        # Обновляем меню курсов после открытия
+        update_courses_menu(self)
+
+    def update_evaluation(self):
+        """Пересчитывает и сохраняет оценку раздела через LLM"""
+        if not self.current_course_dir or not self.current_section:
+            QMessageBox.warning(self, "Предупреждение", "Откройте раздел курса для обновления результатов.")
+            return
+        from _20_evaluate_section import evaluate_section
+        sid = str(self.current_section['id'])
+        res = evaluate_section(self.progress, sid)
+        # Сохраняем результат оценки в прогрессе
+        self.progress['sections'][sid]['evaluation'] = res
+        save_progress(os.path.join(self.current_course_dir, "progress.json"), self.progress)
+        QMessageBox.information(self, "Результаты обновлены", f"Оценка: {res['score']}\nКомментарий: {res['comment']}")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -35,6 +35,7 @@ temp/
 config.local.py
 .env
 secrets/
+settings.json
 
 # Dependencies (если используешь virtualenv, это особенно важно)
 /node_modules/  
