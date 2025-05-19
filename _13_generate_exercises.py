@@ -50,7 +50,7 @@ def generate_exercises(
     # Определяем тип упражнений в зависимости от этапа
     if stage == 0:
         exercise_type = "тесты с единственным правильным ответом"
-        count = 3
+        count = 4
     elif stage == 1:
         exercise_type = "тесты с несколькими правильными ответами"
         count = 2
