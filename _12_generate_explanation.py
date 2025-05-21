@@ -155,4 +155,25 @@ def generate_explanation(
     
     except Exception as e:
         print(f"Ошибка при генерации объяснения: {e}")
-        raise ValueError(f"Не удалось сгенерировать объяснение: {str(e)}") 
+        raise ValueError(f"Не удалось сгенерировать объяснение: {str(e)}")
+
+def pre_generate_explanations(structure_path: str):
+    """Предварительно генерирует объяснения для всех разделов и уровней и сохраняет в structure.json."""
+    from _6_load_course_structure import load_course_structure
+    from _7_save_course_structure import save_course_structure
+
+    # Загружаем структуру курса
+    sections = load_course_structure(structure_path)
+
+    # Генерируем объяснения для каждого раздела и уровня детализации
+    for sec in sections:
+        content = sec.get("content", "")
+        sec.setdefault("explanations", {})
+        for level in ["базовый", "средний", "подробный"]:
+            if level in sec["explanations"]:
+                continue
+            explanation = generate_explanation(content, level)
+            sec["explanations"][level] = explanation
+
+    # Сохраняем обновлённую структуру
+    save_course_structure(structure_path, sections) 

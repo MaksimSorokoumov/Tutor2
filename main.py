@@ -2,7 +2,7 @@
 import sys
 import os
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout
-from PyQt5.QtWidgets import QPushButton, QLabel, QTextEdit, QComboBox, QMessageBox
+from PyQt5.QtWidgets import QPushButton, QLabel, QTextEdit, QComboBox, QMessageBox, QInputDialog
 from PyQt5.QtWidgets import QFileDialog, QTabWidget, QLineEdit, QDialog, QFormLayout
 from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtCore import Qt
@@ -43,6 +43,7 @@ class MainWindow(QMainWindow):
         
         # Загружаем настройки
         self.settings = load_settings("settings.json")
+        self.current_detail_level = self.settings.get("detail_level", "средний")
         
         # Текущий текст и данные
         self.current_text = ""
@@ -78,11 +79,9 @@ class MainWindow(QMainWindow):
         text_buttons_layout = QHBoxLayout()
         self.copy_text_btn = QPushButton("Копировать")
         self.toc_btn = QPushButton("Оглавление")
-        self.explain_btn = QPushButton("Объяснить")
         
         text_buttons_layout.addWidget(self.copy_text_btn)
         text_buttons_layout.addWidget(self.toc_btn)
-        text_buttons_layout.addWidget(self.explain_btn)
         
         text_layout.addWidget(self.text_label)
         text_layout.addWidget(self.text_edit)
@@ -99,6 +98,7 @@ class MainWindow(QMainWindow):
         self.explanation_label.setFont(QFont("Arial", 12, QFont.Bold))
         self.explanation_label.setWordWrap(True)
         self.explanation_label.setMinimumHeight(40)
+        self.complexity_btn = QPushButton("Сложность")
         
         self.explanation_edit = QTextEdit()
         self.explanation_edit.setReadOnly(True)
@@ -118,7 +118,11 @@ class MainWindow(QMainWindow):
         explanation_buttons_layout.addWidget(self.copy_explanation_btn)
         explanation_buttons_layout.addWidget(self.regenerate_btn)
         
-        explanation_layout.addWidget(self.explanation_label)
+        header_layout = QHBoxLayout()
+        header_layout.addWidget(self.explanation_label)
+        header_layout.addStretch()
+        header_layout.addWidget(self.complexity_btn)
+        explanation_layout.addLayout(header_layout)
         explanation_layout.addWidget(self.explanation_edit)
         explanation_layout.addLayout(explanation_buttons_layout)
         explanation_layout.addLayout(explanation_feedback_layout)
@@ -220,6 +224,9 @@ class MainWindow(QMainWindow):
         format_action = tools_menu.addAction("Форматировать материал")
         format_action.triggered.connect(self.format_material)
         
+        pregen_action = tools_menu.addAction("Прегенерировать объяснения")
+        pregen_action.triggered.connect(self.pre_generate_explanations)
+        
         # Меню "Справка"
         help_menu = menubar.addMenu("Справка")
         
@@ -233,11 +240,10 @@ class MainWindow(QMainWindow):
         """Привязывает обработчики событий к виджетам."""
         self.copy_text_btn.clicked.connect(self.copy_text)
         self.toc_btn.clicked.connect(self.open_toc)
-        self.explain_btn.clicked.connect(self.generate_explanation)
-        
         self.copy_explanation_btn.clicked.connect(self.copy_explanation)
         self.regenerate_btn.clicked.connect(self.regenerate_explanation)
         self.send_feedback_btn.clicked.connect(self.send_feedback)
+        self.complexity_btn.clicked.connect(self.select_complexity)
         
         self.check_btn.clicked.connect(self.check_answer)
         self.next_exercise_btn.clicked.connect(self.generate_exercise)
@@ -392,8 +398,35 @@ class MainWindow(QMainWindow):
             log_error(e)
             QMessageBox.critical(self, "Ошибка", f"Не удалось форматировать материал: {e}")
     
+    def select_complexity(self):
+        """Выбор сложности объяснения для текущего раздела."""
+        levels = ["базовый", "средний", "подробный"]
+        current = getattr(self, "current_detail_level", self.settings.get("detail_level", "средний"))
+        try:
+            idx = levels.index(current)
+        except ValueError:
+            idx = 1
+        level, ok = QInputDialog.getItem(self, "Выбор сложности", "Уровень детализации:", levels, idx, False)
+        if ok:
+            self.current_detail_level = level
+            self.generate_explanation()
+    
+    def pre_generate_explanations(self):
+        """Предварительно генерирует объяснения для всех разделов курса."""
+        if not self.current_course_dir:
+            QMessageBox.warning(self, "Предупреждение", "Откройте курс для предварительной генерации объяснений")
+            return
+        structure_path = os.path.join(self.current_course_dir, "structure.json")
+        try:
+            from _12_generate_explanation import pre_generate_explanations as pre_gen
+            pre_gen(structure_path)
+            QMessageBox.information(self, "Информация", "Предварительная генерация объяснений завершена")
+        except Exception as e:
+            log_error(e)
+            QMessageBox.critical(self, "Ошибка", f"Не удалось предварительно сгенерировать объяснения: {e}")
+    
     def create_course_structure(self):
-        """Создает структуру курса на основе загруженной книгу."""
+        """Создает структуру курса на основе загруженной книги."""
         create_course_structure(self)
     
     def open_course(self):
@@ -413,7 +446,10 @@ class MainWindow(QMainWindow):
     def display_section(self, section):
         """Отображает содержимое раздела в интерфейсе."""
         display_section(self, section)
-
+        # сбрасываем уровень сложности на глобальный и загружаем объяснение
+        self.current_detail_level = self.settings.get("detail_level", "средний")
+        self.generate_explanation()
+    
     def create_new_course(self):
         """Создает новый курс в одно действие (открытие книги + создание структуры)."""
         success = create_new_course(self)
